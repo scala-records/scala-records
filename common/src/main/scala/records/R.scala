@@ -1,5 +1,6 @@
 package records
 
 trait R {
-  def row: List[Any]
+  protected val _row: List[Any]
+  def row: List[Any] = _row
 }

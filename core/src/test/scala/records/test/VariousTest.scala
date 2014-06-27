@@ -50,42 +50,38 @@ class VariousTests extends FlatSpec with Matchers {
     x.head.v should be (1)
   }
 
-  it should "LOB lists" in { 
-    import language.reflectiveCalls
-
-    trait A
-    val x = List(new A { val x = 1 }, new A { val x = 2 })
-
-    x.head.x should be (1)
-    x.last.x should be (2)
-
-  }
-
-  ignore should "allow different valued rows in ascribed lists" in {
-    import language.reflectiveCalls
-
-    val x = List[R { def v: Any }](makeInstance(myDummyData), makeInstance(List(2)))
-
-    x.head.v should be (1)  // Runtime failure: NoSuchMethodException
-    x.last.v should be (2)  // Runtime failure: NoSuchMethodException
-  }
-
-  ignore should "allow different valued rows in lists" in {
+  it should "LUB properly" in {
     val x = List(makeInstance(myDummyData), makeInstance(List(2)))
 
-    //x.head.v should be (1)
-    // value v is not a member of records.R{def row: List[Int]}
-    //x.last.v should be (2)
-    // value v is not a member of records.R{def row: List[Int]}
+    x.head.v should be (1)
+    x.last.v should be (2)
+    val r = if (true) makeInstance(myDummyData) else makeInstance(List(2))
+    r.v should be (1)
   }
 
-  ignore should "allow to ascribe a result type" in {
-    import language.reflectiveCalls
+  // this is defined by the user. Could also be a case class!
+  trait VHolder { def v: Any }
 
-    def query: R { def v: Any } =
+  // it would be good if a generic macro could take care of this for all return types!
+  import scala.language.implicitConversions
+  implicit def rowToEntity[T <: R](x: T): VHolder = {
+    new VHolder { def v = x.row(0) }
+  }
+
+  it should "allow different valued rows in ascribed lists" in {
+    // This would be too cool. But lets ask the user to provide a case class for each explicit case.
+    // val x = List[R { def v: Any }](makeInstance(myDummyData), makeInstance(List(2)))
+    val x = List[VHolder](makeInstance(myDummyData), makeInstance(List(2)))
+    x.head.v should be (1)
+    x.last.v should be (2)
+  }
+
+  it should "allow to ascribe a result type" in {
+
+    def query: VHolder =
       makeInstance(myDummyData)
 
-    query.v should be (1) // Runtime failure: NoSuchMethodException
+    query.v should be (1)
   }
 
 }

@@ -8,11 +8,10 @@ object Macros {
   def makeInstance_impl(c: Context)(data: c.Expr[List[Any]]) = {
     c.universe.reify[Any] {
       import scala.language.experimental.macros
-      class Workaround extends R {
-        val row = data.splice
+      new R {
+        protected val _row = data.splice
         def v: Any = macro Macros.selectField_impl
       }
-      new Workaround {}
     }
   }
 
