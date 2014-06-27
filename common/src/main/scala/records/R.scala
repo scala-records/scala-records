@@ -1,5 +1,5 @@
 package records
 
-trait Rec {
+trait R {
   def row: List[Any]
 }
