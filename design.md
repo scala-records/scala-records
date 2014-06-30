@@ -3,39 +3,38 @@ Design decisions about Scala records
 
 Here we need to decide what operations do we want to support and which operations will go into the first version.
 
-## To Mutate or not to Mutate
+## Modifying Field Values
 
-Should we make the records mutable or immutable?
-
+Should we support modification of record values? If yes we have two possibilities:
 
 1. A generic implementation that will take string literals for field names. Here we have a drawback that auto-completion will not work:
 
-    data.map { r => 
-      r.copy("name" -> r.phone.toUppercase, "phone" -> "")
-    }
+        data.map { r => 
+          r.copy("name" -> r.phone.toUppercase, "phone" -> "")
+        }
             
 2. A custom method for each record that will have by-name parameters for all fields:
 
-   data.map { r => 
-     r.copy(name = r.phone.toUppercase, phone = "")
-   }
+        data.map { r => 
+          r.copy(name = r.phone.toUppercase, phone = "")
+        }
 
-The question is can we hide the `copy` method in the type signature of the `R` structural type? 
-
-The immutable records will also suffer from minor performance overhead. This is to be benchmarked after discussion.
+The question is can we hide the `copy` method in the type signature of the `R` structural type? Possibly, by making `copy` and extension method that is a macro that returns a type with an `apply` method that corresponds to all the fields. 
 
 ## Join Semantics
 
-For records `r1 = R { val x = 1; val y = 2; }` and `r2 = R { val y = 3; val z = 4;}` we can:
+Do we need nested records? Do we need joined records? 
+
+If yes, for records `r1 = R { val x = 1; val y = 2; }` and `r2 = R { val y = 3; val z = 4;}` we can:
 
 1. Expose disjoint fields in the joined record and leave common fields in nested records:
     
         r = R {
-          val r1 = R { val y = 2 };
+          val r1 = R { val y = 2; };
           val r2 = R { val y = 3; };
           val x = 1;
           val z = 4;
-        }` 
+        }
    If somebody tries to access `r.y` we can generate a compile time error message that says look in `r2` `r3`. 
 
 2. Just leave two nested records (Slick does something similar): 
@@ -57,6 +56,8 @@ For records `r1 = R { val x = 1; val y = 2; }` and `r2 = R { val y = 3; val z = 
 
 ## Projection
 
+Do we need projection?
+
 Since we do not have singleton types the only way I see to achieve projections is to say:
 
     r.project("name", "phone", ...)
@@ -72,7 +73,7 @@ Should we allow pattern matching? If yes what would the semantics be?
     }
  
     r match {
-      case R("name" -> n, "phone" -> n) => println("Yes!")
+      case R("name" -> n, "phone" -> p) => println("Yes!")
     }
  
     r match {
