@@ -7,30 +7,22 @@ Here we need to decide what operations do we want to support and which operation
 
 Should we make the records mutable or immutable?
 
-1. With *mutable records* one would update the field values with an `=` sign:
-    
-        data.map { r =>
-          r.name = r.name.toUppercase
-          r.phone = ""
-          r 
-        }
-  
-2. *Immutable records* can be implemented in two ways
-    1. A generic implementation that will take string literals for field names. Here we have a drawback that auto-completion will not work:
 
-            data.map { r => 
-              r("name" -> r.phone.toUppercase, "phone" -> "")
-            }
+1. A generic implementation that will take string literals for field names. Here we have a drawback that auto-completion will not work:
+
+    data.map { r => 
+      r.copy("name" -> r.phone.toUppercase, "phone" -> "")
+    }
             
-    2. A custom method for each record that will have by-name parameters for all fields:
+2. A custom method for each record that will have by-name parameters for all fields:
 
-            data.map { r => 
-              r(name = r.phone.toUppercase, phone = "")
-            }
+   data.map { r => 
+     r.copy(name = r.phone.toUppercase, phone = "")
+   }
 
-      The question is can we hide the `apply` method in the type signature of the `R` structural type? 
+The question is can we hide the `copy` method in the type signature of the `R` structural type? 
 
-   The immutable records will also suffer from minor performance overhead. This is to be benchmarked after discussion.
+The immutable records will also suffer from minor performance overhead. This is to be benchmarked after discussion.
 
 ## Join Semantics
 
