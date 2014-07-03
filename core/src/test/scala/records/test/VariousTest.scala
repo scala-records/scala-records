@@ -7,12 +7,14 @@ import records.R
 
 class VariousTests extends FlatSpec with Matchers {
 
-  def defRecord(age: Int = 2) = R("age" -> age, "name" -> "David", "type" -> "R")
+  def defRecord(age: Int = 2) = R("age" -> age, "name" -> "David", "type" -> "R", "blank space" -> " ", "1" -> 1)
   "A Record" should "allow to read the value directly" in {
     val record = defRecord()
 
     record.age should be (2)
     record.`type` should be ("R")
+    // record.`blank space` should be (" ") // does not work
+    record.`1` should be (1)
   }
 
   it should "allow to read the value in a closure" in {
