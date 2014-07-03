@@ -10,8 +10,8 @@ object BuildSettings {
     //scalacOptions += "-Xprint:cleanup",
     scalacOptions ++= Seq("-deprecation", "-feature"),
     autoAPIMappings := true,
-    scalaVersion := "2.11.0",
-    crossScalaVersions := Seq("2.10.2", "2.10.3", "2.10.4", "2.11.0"),
+    scalaVersion := "2.11.1",
+    crossScalaVersions := Seq("2.10.2", "2.10.3", "2.10.4", "2.11.0", "2.11.1"),
     resolvers += Resolver.sonatypeRepo("snapshots"),
     resolvers += Resolver.sonatypeRepo("releases"),
     libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.1.5" % "test"
