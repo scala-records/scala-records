@@ -2,7 +2,6 @@ package records.test
 
 import org.scalatest._
 
-import records.Macros.rec
 import records.R
 
 class VariousTests extends FlatSpec with Matchers {

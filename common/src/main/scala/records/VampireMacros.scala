@@ -3,16 +3,14 @@ package records
 import scala.reflect.macros.whitebox._
 import scala.annotation.StaticAnnotation
 
-class body(index: Int, tpe: String) extends StaticAnnotation
+class body(index: Int) extends StaticAnnotation
 
 object Macros {
 
-  def rec(data: List[Any]): Any = macro rec_impl
-
-  private def record(c: Context)(schema: Seq[(String, String)])(data: c.Expr[List[Any]]) = {
+  private def record(c: Context)(schema: Seq[(String, c.Type)])(data: c.Expr[List[Any]]) = {
     import c.universe._
-    def fieldTree(i: Int, name: String, tpe: String): Tree = q"""
-       @body($i, $tpe) def ${TermName(name)}: ${TypeName(tpe)} =
+    def fieldTree(i: Int, name: String, tpe: Type): Tree = q"""
+       @body($i) def ${TermName(name)}: $tpe =
          macro records.Macros.selectField_impl
     """
 
@@ -54,14 +52,9 @@ object Macros {
        ("error", q"-1")
     }
     val args = args0.sortBy(_._1.toString)
-    val schema = args.map(x => (x._1.toString, x._2.tpe.widen.toString))
+    val schema = args.map(x => (x._1.toString, x._2.tpe.widen))
     val data = q"List[Any](..${args.map(_._2)})"
     record(c)(schema)(c.Expr(data))
-  }
-
-  def rec_impl(c: Context)(data: c.Expr[List[Any]]) = {
-    val schema: List[(String, String)] = List(("phone", "String"),("age", "Int"))
-    record(c)(schema)(data)
   }
 
   def selectField_impl(c: Context) = {
@@ -70,9 +63,10 @@ object Macros {
       _.tpe <:< c.typeOf[body]
     ).head.scalaArgs
 
-    val index :: Literal(Constant(tpe)) :: Nil = args
+    val tpe = c.macroApplication.symbol.asMethod.returnType
+    val List(index) = args
 
-    q"${c.prefix.tree}.data($index).asInstanceOf[${TypeName(tpe.toString)}]"
+    q"${c.prefix.tree}.data($index).asInstanceOf[$tpe]"
   }
 
 }
