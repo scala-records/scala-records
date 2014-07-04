@@ -5,6 +5,5 @@ object R {
 }
 
 trait R {
-  protected val _data: List[Any]
-  def data: List[Any] = _data
+  def data(fieldName: String): Any
 }
