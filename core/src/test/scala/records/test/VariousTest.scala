@@ -7,7 +7,14 @@ import records.R
 
 class VariousTests extends FlatSpec with Matchers {
 
-  def defRecord(age: Int = 2) = R("age" -> age, "name" -> "David", "type" -> "R", "blank space" -> " ", "1" -> 1)
+  def defRecord(age: Int = 2) = R(
+    "age" -> age,
+    "name" -> "David",
+    "type" -> "R",
+    "blank space" -> " ",
+    "1" -> 1)
+
+
   "A Record" should "allow to read the value directly" in {
     val record = defRecord()
 
@@ -73,7 +80,8 @@ class VariousTests extends FlatSpec with Matchers {
   // it would be good if a generic macro could take care of this for all return types!
   import scala.language.implicitConversions
   implicit def rowToEntity[T <: R](x: T): VHolder = {
-    new VHolder { def age = x.data(0).asInstanceOf[Int] }
+    // Age is in field with index 1, since we reorder fields by name
+    new VHolder { def age = x.data(1).asInstanceOf[Int] }
   }
 
   it should "allow different valued rows in ascribed lists" in {
@@ -92,6 +100,17 @@ class VariousTests extends FlatSpec with Matchers {
       defRecord()
 
     query.age should be (2)
+  }
+
+  it should "not depend on declared field order" in {
+
+    val people = List(
+      R("age" -> 1, "name" -> "Michael"),
+      R("name" -> "Ahir", "age" -> 23))
+
+    people.head.name should be ("Michael")
+    people.last.name should be ("Ahir")
+
   }
 
   // possible record operations

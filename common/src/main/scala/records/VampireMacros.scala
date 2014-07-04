@@ -31,7 +31,7 @@ object Macros {
 
   def apply_impl(c: Context)(v: c.Tree*): c.Tree = {
     import c.universe._
-    val args = v.map {
+    val args0 = v.map {
       case Apply(
         TypeApply(
           Select(
@@ -53,6 +53,7 @@ object Macros {
        c.error(NoPosition, "Rec must be used only with arguments StringLiteral -> value!")
        ("error", q"-1")
     }
+    val args = args0.sortBy(_._1.toString)
     val schema = args.map(x => (x._1.toString, x._2.tpe.widen.toString))
     val data = q"List[Any](..${args.map(_._2)})"
     record(c)(schema)(c.Expr(data))
