@@ -51,8 +51,19 @@ object Macros {
        c.error(NoPosition, "Rec must be used only with arguments StringLiteral -> value!")
        ("error", q"-1")
     }
+
     val args = args0.sortBy(_._1.toString)
     val schema = args.map(x => (x._1.toString, x._2.tpe.widen))
+
+    val duplicateFields = schema.groupBy(_._1).filter(_._2.size > 1)
+    if (duplicateFields.nonEmpty) {
+      val fields = duplicateFields.keys
+      if (fields.size == 1)
+        c.error(NoPosition, s"Field ${fields.head} is defined more than once.")
+      else
+        c.error(NoPosition, s"Fields ${fields.mkString(", ")} are defined more than once.")
+    }
+
     val data = q"List[Any](..${args.map(_._2)})"
     record(c)(schema)(c.Expr(data))
   }
