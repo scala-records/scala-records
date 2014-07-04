@@ -80,7 +80,7 @@ class VariousTests extends FlatSpec with Matchers {
   import scala.language.implicitConversions
   implicit def rowToEntity[T <: R](x: T): VHolder = {
     // Age is in field with index 1, since we reorder fields by name
-    new VHolder { def age = x.data(1).asInstanceOf[Int] }
+    new VHolder { def age = x.data("age").asInstanceOf[Int] }
   }
 
   it should "allow different valued rows in ascribed lists" in {
