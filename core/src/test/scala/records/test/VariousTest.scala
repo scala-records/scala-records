@@ -101,16 +101,7 @@ class VariousTests extends FlatSpec with Matchers {
     query.age should be (2)
   }
 
-  it should "not depend on declared field order" in {
-
-    val people = List(
-      R("age" -> 1, "name" -> "Michael"),
-      R("name" -> "Ahir", "age" -> 23))
-
-    people.head.name should be ("Michael")
-    people.last.name should be ("Ahir")
-
-  }
+}
 
   // possible record operations
 //  it should "be possible to pattern match on records" in {
@@ -128,5 +119,3 @@ class VariousTests extends FlatSpec with Matchers {
 //    }
 //
 //  }
-
-}

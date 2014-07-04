@@ -12,19 +12,17 @@ object BuildSettings {
     autoAPIMappings := true,
     scalaVersion := "2.11.1",
     crossScalaVersions := Seq("2.10.2", "2.10.3", "2.10.4", "2.11.0", "2.11.1"),
-    resolvers += Resolver.sonatypeRepo("snapshots"),
-    resolvers += Resolver.sonatypeRepo("releases"),
-    libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.1.5" % "test"
-    //addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full)
+    libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0" % "test"
   )
 
   val macroBuildSettings = buildSettings ++ Seq(
-    scalacOptions += "-language:experimental.macros",
     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
-    libraryDependencies ++= (
-      if (scalaVersion.value.startsWith("2.10")) List("org.scalamacros" %% "quasiquotes" % paradiseVersion)
-      else Nil
-    )
+    libraryDependencies ++= {
+      if (scalaVersion.value.startsWith("2.10")) Seq(
+          compilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
+          "org.scalamacros" %% "quasiquotes" % "2.0.0" cross CrossVersion.binary
+      ) else Nil
+    }
   )
 }
 
@@ -58,6 +56,13 @@ object MyBuild extends Build {
   lazy val core = Project(
     "core",
     file("core"),
-    settings = buildSettings
+    settings = buildSettings ++ Seq(
+      unmanagedSourceDirectories in Test ++= {
+        if (scalaVersion.value.startsWith("2.11"))
+          Seq(sourceDirectory.value / "test-2.11" / "scala")
+        else
+          Seq()
+      }
+    )
   ) dependsOn(macros, common)
 }
