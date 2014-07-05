@@ -101,16 +101,16 @@ class VariousTests extends FlatSpec with Matchers {
     query.age should be (2)
   }
 
-  it should "not depend on declared field order" in {
+  it should "allow tuples to construct literal rows" in {
 
-    val people = List(
-      R("age" -> 1, "name" -> "Michael"),
-      R("name" -> "Ahir", "age" -> 23))
+    val row = R(("foo", 1), ("bar", 2.3))
 
-    people.head.name should be ("Michael")
-    people.last.name should be ("Ahir")
+    row.foo should be (1)
+    row.bar should be (2.3)
 
   }
+
+}
 
   // possible record operations
 //  it should "be possible to pattern match on records" in {
@@ -128,5 +128,3 @@ class VariousTests extends FlatSpec with Matchers {
 //    }
 //
 //  }
-
-}
