@@ -101,6 +101,15 @@ class VariousTests extends FlatSpec with Matchers {
     query.age should be (2)
   }
 
+  it should "allow tuples to construct literal rows" in {
+
+    val row = R(("foo", 1), ("bar", 2.3))
+
+    row.foo should be (1)
+    row.bar should be (2.3)
+
+  }
+
 }
 
   // possible record operations

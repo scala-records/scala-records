@@ -47,6 +47,7 @@ object Macros {
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[R] = {
       val tuples = v.map(_.tree).map {
         case Literal(Constant(s: String)) -> v => (s, v)
+        case q"(${Literal(Constant(s: String))}, $v)" => (s,v)
         case x =>
           c.abort(NoPosition, "Rec must be used only with arguments StringLiteral -> value!")
       }
