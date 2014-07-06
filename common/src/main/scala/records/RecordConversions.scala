@@ -38,7 +38,7 @@ object RecordConversions {
 
       if (!toSym.asClass.isCaseClass) {
         c.abort(NoPosition,
-          "Currently, Records can only be converted to case classes")
+          "Currently, Records can only be converted to case classes.")
       }
 
       val fromFlds = recordFields(fromType).toMap
@@ -47,7 +47,7 @@ object RecordConversions {
       val args = for ((fname, ftpe) <- toFlds) yield {
         if (!fromFlds.contains(fname)) {
           c.abort(NoPosition,
-            s"Source record is missing field $fname")
+            s"Source record is missing field $fname.")
         }
 
         val fType = fromFlds(fname)
@@ -55,7 +55,7 @@ object RecordConversions {
         if (!(fType <:< ftpe)) {
           c.abort(NoPosition,
             s"Type of field $fname of source record ($fType) " +
-            s"doesn't conform the expected type ($ftpe)")
+            s"doesn't conform the expected type ($ftpe).")
         }
 
         // r is the source record
@@ -78,12 +78,12 @@ object RecordConversions {
       }.get
 
       if (primCtor.paramLists.size > 1)
-        c.abort(NoPosition, "Target case class may only have a single paramter list")
+        c.abort(NoPosition, "Target case class may only have a single parameter list.")
 
       for (param <- primCtor.paramLists.head)
         yield (param.name.encoded, param.info)
     }
-    
+
     def recordFields(recType: Type) = for {
       mem <- recType.members
       if mem.isMacro && mem.isMethod

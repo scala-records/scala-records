@@ -45,11 +45,17 @@ object Macros {
     }
 
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[R] = {
+      val constantLiteralsMsg =
+        "Records can only be constructed with constant keys (string literals)."
       val tuples = v.map(_.tree).map {
         case Literal(Constant(s: String)) -> v => (s, v)
         case q"(${Literal(Constant(s: String))}, $v)" => (s,v)
+        case q"($k, $v)"  =>
+          c.abort(NoPosition, constantLiteralsMsg)
+        case _ -> _ =>
+          c.abort(NoPosition, constantLiteralsMsg)
         case x =>
-          c.abort(NoPosition, "Rec must be used only with arguments StringLiteral -> value!")
+          c.abort(NoPosition, "Records can only be constructed with tuples (a, b) and arrows a -> b.")
       }
 
       val schema = tuples.map { case (s,v) => (s, v.tpe.widen) }

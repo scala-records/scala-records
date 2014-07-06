@@ -24,4 +24,11 @@ class ConversionTests extends FlatSpec with Matchers {
     y.myObject should be ("String")
   }
 
+  it should "be able to convert to narrower case classes" in {
+    val x = R("myObject" -> "String", "foo" -> "bar")
+    val y = x.to[ObjectVal]
+
+    y.myObject should be ("String")
+  }
+
 }
