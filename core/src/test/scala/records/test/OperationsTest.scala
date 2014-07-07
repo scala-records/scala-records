@@ -18,4 +18,18 @@ class OperationsTests extends FlatSpec with Matchers {
     r.phone should be ("5555555")
   }
 
+  "A Record" should "should be joined out of combination of case classes and records" in {
+    
+    val rs = List(
+      R("id" -> 1,"name" -> "foo") join RHS(1,"5555555"),
+      R("id" -> 1,"name" -> "foo") join R("id" -> 1,"phone" -> "5555555"),
+      LHS(1,"foo") join R("id" -> 1,"phone" -> "5555555")
+    )
+
+    rs.foreach{ v=> 
+      v.name should be ("foo")
+      v.phone should be ("5555555")
+    }
+  }
+
 }

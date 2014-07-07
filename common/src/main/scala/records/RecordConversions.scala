@@ -71,7 +71,7 @@ object RecordConversions {
       c.Expr(resTree)
     }
 
-    def caseClassFields(ccType: Type) = {
+    def caseClassFields(ccType: Type): List[(String, c.Type)] = {
       val primCtor = ccType.members.collectFirst {
         case m if m.isMethod && m.asMethod.isPrimaryConstructor =>
           m.asMethod
@@ -80,14 +80,14 @@ object RecordConversions {
       if (primCtor.paramLists.size > 1)
         c.abort(NoPosition, "Target case class may only have a single parameter list.")
 
-      for (param <- primCtor.paramLists.head)
-        yield (param.name.encoded, param.info)
+      (for (param <- primCtor.paramLists.head)
+        yield (param.name.encoded, param.info)).toList
     }
 
-    def recordFields(recType: Type) = for {
+    def recordFields(recType: Type): List[(String, c.Type)] = (for {
       mem <- recType.members
       if mem.isMacro && mem.isMethod
-    } yield (mem.name.encoded, mem.asMethod.returnType)
+    } yield (mem.name.encoded, mem.asMethod.returnType)).toList
 
   }
 

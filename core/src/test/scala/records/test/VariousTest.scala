@@ -13,7 +13,6 @@ class VariousTests extends FlatSpec with Matchers {
     "age" -> age,
     "name" -> "David")
 
-
   "A Record" should "allow to read the value directly" in {
     val record = defRecord()
 
