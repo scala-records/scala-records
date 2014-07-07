@@ -13,7 +13,7 @@ object Macros {
     import Compat210._
     import c.universe._
 
-    private def record(schema: Seq[(String, Type)])(data: c.Expr[Map[String,Any]]) = {
+    protected[records] def record(schema: Seq[(String, Type)])(data: c.Expr[Map[String,Any]]) = {
       def fieldTree(i: Int, name: String, tpe: Type): Tree =
         q"def ${newTermName(name)}: $tpe = macro records.Macros.selectField_impl[$tpe]"
 
