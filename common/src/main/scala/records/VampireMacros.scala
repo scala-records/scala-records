@@ -23,7 +23,7 @@ object Macros {
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
-        class Workaround extends R {
+        class Workaround extends records.R {
           private val _data = ${data.tree}
           def data(fieldName: String): Any = _data(fieldName)         
           ..$fields
@@ -33,7 +33,7 @@ object Macros {
       } else {
         q"""
         import scala.language.experimental.macros
-        new R {
+        new records.R {
           private val _data = ${data.tree}
           def data(fieldName: String): Any = _data(fieldName)
           ..$fields
