@@ -25,7 +25,7 @@ object Macros {
         import scala.language.experimental.macros
         class Workaround extends R {
           private val _data = ${data.tree}
-          def data(fieldName: String): Any = _data(fieldName)
+          def data(fieldName: String): Any = _data(fieldName)         
           ..$fields
         }
         new Workaround()
