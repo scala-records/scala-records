@@ -1,8 +1,8 @@
-package records.test
+package ch.epfl.test
 
 import org.scalatest._
-import records.Operations._
-import records.R
+import ch.epfl.Operations._
+import ch.epfl.R
 
 class OperationsTests extends FlatSpec with Matchers {
 

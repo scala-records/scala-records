@@ -1,4 +1,4 @@
-package records
+package ch.epfl
 
 import RecordConversions._
 import scala.language.experimental.macros
@@ -28,8 +28,8 @@ object Operations {
       val rhsType = weakTypeTag[RHS].tpe
       val rhsSym = lhsType.typeSymbol
 
-      if (!(lhsSym.asClass.isCaseClass || lhsType <:< typeOf[records.R]) &&
-       !(rhsSym.asClass.isCaseClass || rhsType <:< typeOf[records.R])) {
+      if (!(lhsSym.asClass.isCaseClass || lhsType <:< typeOf[ch.epfl.R]) &&
+       !(rhsSym.asClass.isCaseClass || rhsType <:< typeOf[ch.epfl.R])) {
         c.abort(NoPosition, "Only case classes and records can be joined.")
       }
 
@@ -39,7 +39,7 @@ object Operations {
       val (lhsVal, rhsVal) = (TermName(c.fresh("lhs$")), TermName(c.fresh("rhs$")))
 
       def fields(tpe: c.Type) = 
-        if(tpe <:< typeOf[records.R]) conv.recordFields(tpe) else conv.caseClassFields(tpe)
+        if(tpe <:< typeOf[ch.epfl.R]) conv.recordFields(tpe) else conv.caseClassFields(tpe)
       val (lhsFields, rhsFields) = (fields(lhsType), fields(rhsType))
       val commonFields = (lhsFields ++ rhsFields).distinct      
 
