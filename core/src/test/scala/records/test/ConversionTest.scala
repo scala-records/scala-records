@@ -1,8 +1,8 @@
-package records.test
+package ch.epfl.test
 
 import org.scalatest._
 
-import records.R
+import ch.epfl.R
 
 class ConversionTests extends FlatSpec with Matchers {
 

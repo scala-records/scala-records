@@ -1,4 +1,4 @@
-package records
+package ch.epfl
 
 import scala.language.experimental.macros
 
