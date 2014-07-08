@@ -30,14 +30,14 @@ class VariousTests extends FlatSpec with Matchers {
     import records.{ R => X }
     val row = X("foo" -> 1)
 
-    row.foo should be (1)    
+    row.foo should be (1)
   }
 
   it should "allow aliases" in {
     val X = records.R    
     val row = X("foo" -> 1)    
 
-    row.foo should be (1)    
+    row.foo should be (1)
   }
 
   it should "be hygienic" in {
