@@ -1,4 +1,4 @@
-package records
+package ch.epfl
 
 object Compat210 {
 
