@@ -1,4 +1,4 @@
-package ch.epfl
+package records
 
 import Compat210._
 
@@ -27,7 +27,7 @@ object Macros {
       */
     def record(schema: Seq[(String, Type)])(ancestors: Ident*)(fields: Tree*)(dataImpl: Tree) = {
       def fieldTree(i: Int, name: String, tpe: Type): Tree =
-        q"def ${newTermName(name)}: $tpe = macro ch.epfl.Macros.selectField_impl[$tpe]"
+        q"def ${newTermName(name)}: $tpe = macro records.Macros.selectField_impl[$tpe]"
 
       val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
@@ -35,7 +35,7 @@ object Macros {
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
-        class Workaround extends ch.epfl.R with ..$ancestors {
+        class Workaround extends records.R with ..$ancestors {
           ..$fields
           def __data[T](fieldName: String): T = $dataImpl
           ..$macroFields
@@ -45,7 +45,7 @@ object Macros {
       } else {
         q"""
         import scala.language.experimental.macros
-        new ch.epfl.R with ..$ancestors {
+        new records.R with ..$ancestors {
           ..$fields
           def __data[T](fieldName: String): T = $dataImpl
           ..$macroFields
