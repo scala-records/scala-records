@@ -2,10 +2,6 @@ package records
 
 import scala.language.experimental.macros
 
-import reflect.macros._
-import Compat210._
-import blackbox.Context
-
 object R {
   def apply(v: (String, Any)*): R = macro records.Macros.apply_impl
 
