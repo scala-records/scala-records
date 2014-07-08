@@ -18,14 +18,14 @@ class VariousTests extends FlatSpec with Matchers {
     record.age should be (2)
   }
 
-  it should "be created with a special constructor" in {    
+  it should "be created with a special constructor" in {
     val row = records.R("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
 
     row.foo should be (1)
     row.bar should be (2.3)
     row.baz should be (1.7)
   }
-  
+
   it should "allow renaming in imports" in {
     import records.{ R => X }
     val row = X("foo" -> 1)
@@ -34,8 +34,8 @@ class VariousTests extends FlatSpec with Matchers {
   }
 
   it should "allow aliases" in {
-    val X = records.R    
-    val row = X("foo" -> 1)    
+    val X = records.R
+    val row = X("foo" -> 1)
 
     row.foo should be (1)
   }
@@ -95,7 +95,7 @@ class VariousTests extends FlatSpec with Matchers {
     x.head.age should be (2)
   }
 
-  it should "LUB properly" in {
+  it should "LUB properly if both records are the same" in {
     val x = List(defRecord(), defRecord(3))
 
     x.head.age should be (2)

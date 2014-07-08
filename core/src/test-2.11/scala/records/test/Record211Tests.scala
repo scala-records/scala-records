@@ -34,4 +34,16 @@ class Record211Tests extends FlatSpec with Matchers {
       DBRecord("Chuck",   2,  "bar")))
   }
 
+  it should "lub for records of different shapes" in {
+
+    val data = List(
+      R("name" -> "Hans"),
+      R("name" -> "Peter", "age" ->   1),
+      R("name" -> "Chuck", "age" ->   2, "location" -> "bar"))
+
+    val recs = data.map(_.name)
+
+    recs should be (List("Hans", "Peter", "Chuck"))
+  }
+
 }
