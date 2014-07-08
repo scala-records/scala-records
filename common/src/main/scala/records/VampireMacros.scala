@@ -13,30 +13,42 @@ object Macros {
     import Compat210._
     import c.universe._
 
-    private def record(schema: Seq[(String, Type)])(data: c.Expr[Map[String,Any]]) = {
+    /** Create a generalized Record
+      *
+      * @param schema List of (field name, field type) tuples
+      * @param ancestors Traits that are mixed into the resulting R
+      *    (e.g. Serializable). Make sure the idents are fully
+      *    qualified.
+      * @param fields Additional members/fields of the resulting R
+      *    (recommended for private data fields)
+      * @param dataImpl Implementation of the [[__data]] method.
+      *    Should use the parameter [[fieldName]] of type String and
+      *    return a value of a corresponding type.
+      */
+    def record(schema: Seq[(String, Type)])(ancestors: Ident*)(fields: Tree*)(dataImpl: Tree) = {
       def fieldTree(i: Int, name: String, tpe: Type): Tree =
         q"def ${newTermName(name)}: $tpe = macro ch.epfl.Macros.selectField_impl[$tpe]"
 
-      val fields =
+      val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
 
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
-        class Workaround extends ch.epfl.R {
-          private val _data = ${data.tree}
-          def __data[T](fieldName: String): T = _data(fieldName).asInstanceOf[T]
+        class Workaround extends ch.epfl.R with ..$ancestors {
           ..$fields
+          def __data[T](fieldName: String): T = $dataImpl
+          ..$macroFields
         }
         new Workaround()
         """
       } else {
         q"""
         import scala.language.experimental.macros
-        new ch.epfl.R {
-          private val _data = ${data.tree}
-          def __data[T](fieldName: String): T = _data(fieldName).asInstanceOf[T]
+        new ch.epfl.R with ..$ancestors {
           ..$fields
+          def __data[T](fieldName: String): T = $dataImpl
+          ..$macroFields
         }
         """
       }
@@ -65,7 +77,7 @@ object Macros {
       val args = tuples.map { case (s,v) => q"($s,$v)" }
       val data = q"Map[String,Any](..$args)"
 
-      record(schema)(c.Expr(data))
+      record(schema)()(q"private val _data = $data")(q"_data(fieldName).asInstanceOf[T]")
     }
 
     private def checkDuplicate(schema: Seq[(String, c.Type)]): Unit = {
