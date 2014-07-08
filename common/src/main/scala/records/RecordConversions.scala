@@ -11,27 +11,14 @@ object RecordConversions {
   import scala.reflect.macros._
   import whitebox.Context
 
-  trait FromRecord[From <: R, To] {
-    def apply(rec: From): To
-  }
-
-  object FromRecord {
-
-    implicit def fromRecord[From <: R, To]: FromRecord[From, To] =
-      macro fromRecord_impl[From, To]
-
-    def fromRecord_impl[From <: R : c.WeakTypeTag, To: c.WeakTypeTag](
-      c: Context): c.Expr[FromRecord[From, To]] =
+  def fromRecord_impl[From <: R : c.WeakTypeTag, To: c.WeakTypeTag](
+      c: Context): c.Expr[To] =
       new ConversionMacros[c.type](c).createFromRecord[From, To]
-
-  }
 
   class ConversionMacros[C <: Context](val c: C) extends Internal210 {
     import c.universe._
 
-    def createFromRecord[From <: R : WeakTypeTag,
-      To: WeakTypeTag]: c.Expr[FromRecord[From, To]] = {
-
+    def createFromRecord[From <: R : WeakTypeTag, To : WeakTypeTag]: c.Expr[To] = {
       val fromType = weakTypeTag[From].tpe
       val toType = weakTypeTag[To].tpe
       val toSym = toType.typeSymbol
@@ -43,7 +30,7 @@ object RecordConversions {
 
       val fromFlds = recordFields(fromType).toMap
       val toFlds = caseClassFields(toType)
-
+      val tmpTerm = newTermName(c.fresh("tmp$"))
       val args = for ((fname, ftpe) <- toFlds) yield {
         if (!fromFlds.contains(fname)) {
           c.abort(NoPosition,
@@ -59,14 +46,12 @@ object RecordConversions {
         }
 
         // r is the source record
-        q"r.data($fname).asInstanceOf[$ftpe]"
+        q"${tmpTerm}.record.__data[$ftpe]($fname)"
       }
 
       val resTree = q"""
-      new records.RecordConversions.FromRecord[$fromType, $toType] {
-        def apply(r: $fromType) = new $toType(..$args)
-      }
-      """
+      val ${tmpTerm} = ${c.prefix.tree}
+      new $toType(..$args)"""
 
       c.Expr(resTree)
     }

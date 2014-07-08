@@ -6,6 +6,10 @@ object Compat210 {
     type Context = scala.reflect.macros.Context
   }
 
+  object blackbox {
+    type Context = scala.reflect.macros.Context
+  }
+
 }
 import Compat210._
 
