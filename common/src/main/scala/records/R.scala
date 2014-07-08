@@ -11,5 +11,5 @@ object R {
 }
 
 trait R {
-  def data(fieldName: String): Any
+  def __data[T](fieldName: String): T
 }

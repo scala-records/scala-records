@@ -46,7 +46,7 @@ object RecordConversions {
         }
 
         // r is the source record
-        q"${tmpTerm}.record.data($fname).asInstanceOf[$ftpe]"
+        q"${tmpTerm}.record.__data[$ftpe]($fname)"
       }
 
       val resTree = q"""

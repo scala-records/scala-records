@@ -25,7 +25,7 @@ object Macros {
         import scala.language.experimental.macros
         class Workaround extends records.R {
           private val _data = ${data.tree}
-          def data(fieldName: String): Any = _data(fieldName)         
+          def __data[T](fieldName: String): T = _data(fieldName).asInstanceOf[T]
           ..$fields
         }
         new Workaround()
@@ -35,7 +35,7 @@ object Macros {
         import scala.language.experimental.macros
         new records.R {
           private val _data = ${data.tree}
-          def data(fieldName: String): Any = _data(fieldName)
+          def __data[T](fieldName: String): T = _data(fieldName).asInstanceOf[T]
           ..$fields
         }
         """
@@ -136,7 +136,7 @@ object Macros {
     val fieldName = c.macroApplication.symbol.name.toString
     val tpe = implicitly[c.WeakTypeTag[T]].tpe
 
-    c.Expr[T](q"${c.prefix.tree}.data($fieldName).asInstanceOf[$tpe]")
+    c.Expr[T](q"${c.prefix.tree}.__data[$tpe]($fieldName)")
   }
 
 }
