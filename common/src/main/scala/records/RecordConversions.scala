@@ -30,7 +30,7 @@ object RecordConversions {
 
       val fromFlds = recordFields(fromType).toMap
       val toFlds = caseClassFields(toType)
-      val tmpTerm = TermName(c.fresh("tmp$"))
+      val tmpTerm = newTermName(c.fresh("tmp$"))
       val args = for ((fname, ftpe) <- toFlds) yield {
         if (!fromFlds.contains(fname)) {
           c.abort(NoPosition,
