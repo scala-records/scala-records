@@ -24,21 +24,27 @@ class VariousTests extends FlatSpec with Matchers {
     row.foo should be (1)
     row.bar should be (2.3)
     row.baz should be (1.7)
-
   }
   
   it should "allow renaming in imports" in {
     import records.{ R => X }
     val row = X("foo" -> 1)
 
-    row.foo should be (1)
+    row.foo should be (1)    
   }
 
   it should "allow aliases" in {
     val X = records.R    
-    val row = X("foo" -> 1)
+    val row = X("foo" -> 1)    
 
-    row.foo should be (1)
+    row.foo should be (1)    
+  }
+
+  it should "be hygienic" in {
+    object records {
+      val R = Predef
+    }
+    defRecord(3).age should be (3)
   }
 
   import records.R

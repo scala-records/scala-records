@@ -35,7 +35,7 @@ object Macros {
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
-        class Workaround extends records.R with ..$ancestors {
+        class Workaround extends _root_.records.R with ..$ancestors {
           ..$fields
           def __data[T](fieldName: String): T = $dataImpl
           ..$macroFields
@@ -45,7 +45,7 @@ object Macros {
       } else {
         q"""
         import scala.language.experimental.macros
-        new records.R with ..$ancestors {
+        new _root_.records.R with ..$ancestors {
           ..$fields
           def __data[T](fieldName: String): T = $dataImpl
           ..$macroFields
