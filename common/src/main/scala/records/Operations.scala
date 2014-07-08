@@ -1,4 +1,4 @@
-package ch.epfl
+package records
 
 import RecordConversions._
 import scala.language.experimental.macros
@@ -17,7 +17,7 @@ object Operations {
  
   object implementations {
   	import scala.language.existentials
-  	def join_impl[LHS: c.WeakTypeTag, RHS: c.WeakTypeTag](c: Context)(rhs: c.Expr[RHS]) = {
+  	def join_impl[LHS: c.WeakTypeTag, RHS: c.WeakTypeTag](c: Context)(rhs: c.Expr[RHS]): c.Expr[Any] = {
       import c.universe._
       val rMacros = new Macros.RecordMacros[c.type](c)
       val conv = new ConversionMacros[c.type](c)
@@ -28,32 +28,34 @@ object Operations {
       val rhsType = weakTypeTag[RHS].tpe
       val rhsSym = lhsType.typeSymbol
 
-      if (!(lhsSym.asClass.isCaseClass || lhsType <:< typeOf[ch.epfl.R]) &&
-       !(rhsSym.asClass.isCaseClass || rhsType <:< typeOf[ch.epfl.R])) {
+      if (!(lhsSym.asClass.isCaseClass || lhsType <:< typeOf[records.R]) &&
+       !(rhsSym.asClass.isCaseClass || rhsType <:< typeOf[records.R])) {
         c.abort(NoPosition, "Only case classes and records can be joined.")
       }
 
       // get the lhs
-      val Apply(TypeApply(Select(Select(_, _), TermName("JoinR")), List(TypeTree())), List(lhsTree)) = c.prefix.tree      
+      val JoinR = newTermName("JoinR")
+      val Apply(TypeApply(Select(Select(_, _), JoinR), List(TypeTree())), List(lhsTree)) = c.prefix.tree
       val rhsTree = rhs.tree
-      val (lhsVal, rhsVal) = (TermName(c.fresh("lhs$")), TermName(c.fresh("rhs$")))
+      val (lhsVal, rhsVal) = (newTermName(c.fresh("lhs$")), newTermName(c.fresh("rhs$")))
 
       def fields(tpe: c.Type) = 
-        if(tpe <:< typeOf[ch.epfl.R]) conv.recordFields(tpe) else conv.caseClassFields(tpe)
-      val (lhsFields, rhsFields) = (fields(lhsType), fields(rhsType))
+        if(tpe <:< typeOf[records.R]) conv.recordFields(tpe) else conv.caseClassFields(tpe)
+      val (lhsFields, rhsFields) = (fields(lhsType).toList, fields(rhsType).toList)
       val commonFields = (lhsFields ++ rhsFields).distinct      
 
       def fieldConstructors(fields: List[(String, c.Type)], v: TermName): List[Tree] = 
-        fields.map(_._1.toString).map(name => q"${Literal(Constant(name))} -> $v.${TermName(name)}")
+        fields.map(_._1.toString).map(name => q"${Literal(Constant(name))} -> $v.${newTermName(name)}")
       val constructorArgs = fieldConstructors(lhsFields, lhsVal) ++
        fieldConstructors(rhsFields.filter(!lhsFields.contains(_)), rhsVal)
   		
+      val data = q"Map(..$constructorArgs)"
   		// make a record with a combination of fields
-      q"""
+      c.Expr(q"""
         val $lhsVal = $lhsTree
         val $rhsVal = $rhsTree
-        ${rMacros.record(commonFields)(c.Expr(q"""Map(..$constructorArgs)""")).tree}
-      """  		  		
+        ${rMacros.record(commonFields)()(q"private val _data = $data")(q"_data(fieldName).asInstanceOf[T]")}
+      """)	  		
   	}
   }
 }

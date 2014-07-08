@@ -1,4 +1,4 @@
-package ch.epfl.test
+package records.test
 
 import org.scalatest._
 
@@ -7,7 +7,7 @@ import scala.language.reflectiveCalls
 
 class VariousTests extends FlatSpec with Matchers {
 
-  def defRecord(age: Int = 2) = ch.epfl.R(
+  def defRecord(age: Int = 2) = records.R(
     "age" -> age,
     "name" -> "David")
 
@@ -18,29 +18,35 @@ class VariousTests extends FlatSpec with Matchers {
   }
 
   it should "be created with a special constructor" in {    
-    val row = ch.epfl.R("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
+    val row = records.R("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
 
     row.foo should be (1)
     row.bar should be (2.3)
     row.baz should be (1.7)
-
   }
   
   it should "allow renaming in imports" in {
-    import ch.epfl.{ R => X }
+    import records.{ R => X }
     val row = X("foo" -> 1)
 
-    row.foo should be (1)
+    row.foo should be (1)    
   }
 
   it should "allow aliases" in {
-    val X = ch.epfl.R    
-    val row = X("foo" -> 1)
+    val X = records.R    
+    val row = X("foo" -> 1)    
 
-    row.foo should be (1)
+    row.foo should be (1)    
   }
 
-  import ch.epfl.R
+  it should "be hygienic" in {
+    object records {
+      val R = Predef
+    }
+    defRecord(3).age should be (3)
+  }
+
+  import records.R
   it should "allow strange field names" in {
     val record = R(
       "type" -> "R",
@@ -128,6 +134,6 @@ class VariousTests extends FlatSpec with Matchers {
     row.foo should be (1)
     row.bar should be (2.3)
     row.baz should be (1.7)
-  }
 
+  }
 }

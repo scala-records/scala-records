@@ -1,8 +1,8 @@
-package ch.epfl.test
+package records.test
 
 import org.scalatest._
 
-import ch.epfl.R
+import records.R
 
 class Record211Tests extends FlatSpec with Matchers {
 
