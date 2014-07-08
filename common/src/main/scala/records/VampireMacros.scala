@@ -77,7 +77,7 @@ object Macros {
       val args = tuples.map { case (s,v) => q"($s,$v)" }
       val data = q"Map[String,Any](..$args)"
 
-      record(schema)()(q"private val _data = $data")(q"_data(fieldName).asInstanceOf[T]")
+      record(schema)()(q"val _data = $data")(q"_data(fieldName).asInstanceOf[T]")
     }
 
     private def checkDuplicate(schema: Seq[(String, c.Type)]): Unit = {
