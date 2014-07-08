@@ -92,47 +92,11 @@ object Macros {
     }
 
     object -> {
-      val Scala = newTypeName("scala")
-      val Predef = newTermName("Predef")
-      val ArrowAssoc = newTermName("ArrowAssoc")
-      val Any2ArrowAssoc = newTermName("any2ArrowAssoc")
-      val `$minus$greater` = newTermName("$minus$greater")
-
       def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
         // Scala 2.11.x
-        case Apply(
-          TypeApply(
-            Select(
-              Apply(
-                TypeApply(
-                  Select(Select(This(Scala), Predef), ArrowAssoc),
-                  List(TypeTree())
-                ),
-                List(a)
-              ),
-              `$minus$greater`
-            ),
-            List(TypeTree())
-          ),
-          List(b)
-        ) => Some((a,b))
+        case q"scala.this.Predef.ArrowAssoc[..${_}]($a).->[..${_}]($b)" => Some((a,b))
         // Scala 2.10.x
-        case Apply(
-          TypeApply(
-            Select(
-              Apply(
-                TypeApply(
-                  Select(Select(This(Scala), Predef), Any2ArrowAssoc),
-                  List(TypeTree())
-                ),
-                List(a)
-              ),
-              `$minus$greater`
-            ),
-            List(TypeTree())
-          ),
-          List(b)
-        ) => Some((a,b))
+        case q"scala.this.Predef.any2ArrowAssoc[..${_}]($a).->[..${_}]($b)" => Some((a,b))
         case _ => None
       }
     }
