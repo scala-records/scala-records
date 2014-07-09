@@ -24,6 +24,14 @@ trait Internal210 { self =>
     def info = sym.typeSignature
   }
 
+  implicit class RichContext(val c: self.c.type) {
+    object ImplicitCandidate {
+      def unapply(x: (c.Type, c.Tree)): Option[(Type, Symbol, Type, Tree)] = {
+        Some((NoType, NoSymbol, x._1, x._2))
+      }
+    }
+  }
+
   implicit class RichMethodSymbol(val sym: MethodSymbol) {
     def paramLists = sym.paramss
   }

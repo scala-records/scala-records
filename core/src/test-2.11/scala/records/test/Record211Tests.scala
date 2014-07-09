@@ -46,4 +46,22 @@ class Record211Tests extends FlatSpec with Matchers {
     recs should be (List("Hans", "Peter", "Chuck"))
   }
 
+  it should "implicitly convert to a case class in a val position" in {
+    import records.RecordConversions.recordToCaseClass
+    val x: DBRecord = R("name" -> "David", "age" -> 3, "location" -> "Lausanne")
+
+    x.name should be ("David")
+  }
+
+  it should "implicitly convert to a case class when constructing a list" in {
+    import records.RecordConversions.recordToCaseClass
+    val xs = List[DBRecord](
+     R("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
+     R("name" -> "David", "age" -> 3, "location" -> "Lausanne")
+    )
+
+    xs.head.name should be ("David")
+    xs.tail.head.name should be ("David")
+  }
+
 }
