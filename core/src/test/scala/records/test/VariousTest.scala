@@ -135,6 +135,5 @@ class VariousTests extends FlatSpec with Matchers {
     row.foo should be (1)
     row.bar should be (2.3)
     row.baz should be (1.7)
-
   }
 }

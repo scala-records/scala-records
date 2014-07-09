@@ -11,16 +11,43 @@ object RecordConversions {
   import scala.reflect.macros._
   import whitebox.Context
 
+  implicit def recordToCaseClass[From <: R, To <: Product]: From => To = macro recordToCaseClass_impl[From, To]
+
+  def recordToCaseClass_impl[From <: R : c.WeakTypeTag, To <: Product : c.WeakTypeTag](c: Context): c.Expr[To] =
+    new ConversionMacros[c.type](c).recordToCaseClass[From, To]
+
   def fromRecord_impl[From <: R : c.WeakTypeTag, To: c.WeakTypeTag](
-      c: Context): c.Expr[To] =
-      new ConversionMacros[c.type](c).createFromRecord[From, To]
+      c: Context): c.Expr[To] = {
+    import c.universe._
+    val fromType = c.weakTypeTag[From].tpe
+    val toType = c.weakTypeTag[To].tpe
+    new ConversionMacros[c.type](c).createFromRecord[From, To](fromType, toType, q"${c.prefix.tree}.record")
+  }
 
   class ConversionMacros[C <: Context](val c: C) extends Internal210 {
     import c.universe._
 
-    def createFromRecord[From <: R : WeakTypeTag, To : WeakTypeTag]: c.Expr[To] = {
-      val fromType = weakTypeTag[From].tpe
-      val toType = weakTypeTag[To].tpe
+    def recordToCaseClass[From <: R : c.WeakTypeTag, To <: Product : c.WeakTypeTag]: c.Expr[To] = {
+      import c.universe._
+
+      val validImplicit = c.openImplicits.collectFirst {
+        case c.ImplicitCandidate(_, _, tp, _) =>
+          tp
+      }
+
+      validImplicit match {
+        case None =>
+          c.abort(NoPosition, "The return type is not applicable to the record.")
+        case Some(tp) =>
+          val TypeRef(_, _, _ :: retType :: Nil) = tp.normalize
+          val fromType = weakTypeTag[From].tpe
+          val toType = retType.normalize
+          val conversionTree = createFromRecord[From, To](fromType, toType, Ident("arg"))
+          c.Expr(q"(((arg: ${TypeTree()}) => {$conversionTree}): $tp)")
+      }
+    }
+
+    def createFromRecord[From <: R : WeakTypeTag, To : WeakTypeTag](fromType: Type, toType: Type, rec: Tree): c.Expr[To] = {
       val toSym = toType.typeSymbol
 
       if (!toSym.asClass.isCaseClass) {
@@ -46,11 +73,11 @@ object RecordConversions {
         }
 
         // r is the source record
-        q"${tmpTerm}.record.__data[$ftpe]($fname)"
+        q"${tmpTerm}.__data[$ftpe]($fname)"
       }
 
       val resTree = q"""
-      val ${tmpTerm} = ${c.prefix.tree}
+      val ${tmpTerm} = $rec
       new $toType(..$args)"""
 
       c.Expr(resTree)
@@ -75,7 +102,4 @@ object RecordConversions {
     } yield (mem.name.encoded, mem.asMethod.returnType)
 
   }
-
-
-
 }

@@ -30,5 +30,4 @@ class ConversionTests extends FlatSpec with Matchers {
 
     y.myObject should be ("String")
   }
-
 }
