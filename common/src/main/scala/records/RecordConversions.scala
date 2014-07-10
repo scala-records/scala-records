@@ -52,18 +52,19 @@ object RecordConversions {
 
       if (!toSym.asClass.isCaseClass) {
         c.abort(NoPosition,
-          "Currently, Records can only be converted to case classes.")
+          s"Records can only be converted to case classes; $toType is not a case class.")
       }
 
       val fromFlds = recordFields(fromType).toMap
       val toFlds = caseClassFields(toType)
       val tmpTerm = newTermName(c.fresh("tmp$"))
+      val missingFields = toFlds.map(_._1).filterNot(fromFlds.contains(_))
+      if (missingFields.size > 0) {
+        c.abort(NoPosition,
+          s"Converting to $toType would require the source record to have the " +
+          s"following additional fields: ${missingFields.mkString("[", ", ", "]")}.")
+      }
       val args = for ((fname, ftpe) <- toFlds) yield {
-        if (!fromFlds.contains(fname)) {
-          c.abort(NoPosition,
-            s"Source record is missing field $fname.")
-        }
-
         val fType = fromFlds(fname)
 
         if (!(fType <:< ftpe)) {
