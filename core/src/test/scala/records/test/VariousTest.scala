@@ -4,8 +4,15 @@ import org.scalatest._
 
 // This is for 2.10.x compatibility!
 import scala.language.reflectiveCalls
+import scala.language.experimental.macros
+
+object Typecheck {
+  def typed(what: String): Unit = macro TypecheckingMacros.typed
+  def typedWithMsg(what: String, msg: String): Unit = macro TypecheckingMacros.typedWithMsg
+}
 
 class VariousTests extends FlatSpec with Matchers {
+  import Typecheck._
 
   def defRecord(age: Int = 2) = records.R(
     "age" -> age,
@@ -135,5 +142,13 @@ class VariousTests extends FlatSpec with Matchers {
     row.foo should be (1)
     row.bar should be (2.3)
     row.baz should be (1.7)
+  }
+
+  it should "report an error on invalid field access" in {
+    val row = records.R("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
+
+    typedWithMsg("""row.lol""",
+      "value lol is not a member of records.R{def foo: Int; def bar: Double; def baz: Double}")
+    // typed(""" row.foo """) // this will obviously compile
   }
 }

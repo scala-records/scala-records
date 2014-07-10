@@ -30,11 +30,16 @@ trait Internal210 { self =>
         Some((NoType, NoSymbol, x._1, x._2))
       }
     }
+
+    def typecheck(tree: c.universe.Tree): c.universe.Tree =
+      c.typeCheck(tree)
+
   }
 
   implicit class RichMethodSymbol(val sym: MethodSymbol) {
     def paramLists = sym.paramss
   }
+
 }
 
 object CompatInfo {
