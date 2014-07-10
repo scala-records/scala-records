@@ -27,7 +27,7 @@ object Macros {
       */
     def record(schema: Seq[(String, Type)])(ancestors: Ident*)(fields: Tree*)(dataImpl: Tree) = {
       def fieldTree(i: Int, name: String, tpe: Type): Tree =
-        q"def ${newTermName(name)}: $tpe = macro records.Macros.selectField_impl[$tpe]"
+        q"def ${newTermName(name).encodedName.toTermName}: $tpe = macro records.Macros.selectField_impl[$tpe]"
 
       val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
@@ -109,9 +109,8 @@ object Macros {
   def selectField_impl[T : c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._
 
-    val fieldName = c.macroApplication.symbol.name.toString
+    val fieldName = newTermName(c.macroApplication.symbol.name.toString).decoded
     val tpe = implicitly[c.WeakTypeTag[T]].tpe
-
     c.Expr[T](q"${c.prefix.tree}.__data[$tpe]($fieldName)")
   }
 
