@@ -66,5 +66,5 @@ object MyBuild extends Build {
       }
     )
   )
-
 }
+
