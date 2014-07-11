@@ -6,6 +6,8 @@ import Compat210._
 
 import scala.annotation.StaticAnnotation
 
+import Macros.RecordMacros
+
 object RecordConversions {
   // Import macros only here, otherwise we collide with Compat210.whitebox
   import scala.reflect.macros._
@@ -27,7 +29,8 @@ object RecordConversions {
       fromType, toType, q"${c.prefix.tree}.record")
   }
 
-  class ConversionMacros[C <: Context](val c: C) extends Internal210 {
+  class ConversionMacros[C <: Context](override val c: C)
+      extends RecordMacros[C](c) with Internal210 {
     import c.universe._
 
     def recordToCaseClass[From <: R : c.WeakTypeTag,
@@ -78,8 +81,7 @@ object RecordConversions {
             s"doesn't conform the expected type ($ftpe).")
         }
 
-        // r is the source record
-        q"${tmpTerm}.__data[$ftpe]($fname)"
+        accessData(q"$tmpTerm", fname, ftpe)
       }
 
       val resTree = q"""

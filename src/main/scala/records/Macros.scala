@@ -12,7 +12,10 @@ object Macros {
   class RecordMacros[C <: Context](val c: C) {
     import c.universe._
 
-    /** Create a generalized Record
+    /** Create a Record
+      *
+      * This creates a simple record that implements __data. As a
+      * consequence it needs to box when used with primitive types.
       *
       * @param schema List of (field name, field type) tuples
       * @param ancestors Traits that are mixed into the resulting R
@@ -25,7 +28,72 @@ object Macros {
       *    return a value of a corresponding type.
       */
     def record(schema: Seq[(String, Type)])(
-      ancestors: Ident*)(fields: Tree*)(dataImpl: Tree) = {
+      ancestors: Ident*)(fields: Tree*)(dataImpl: Tree): Tree = {
+
+      val dataDef = q"""
+        override def __data[T : _root_.scala.reflect.ClassTag](
+          fieldName: String): T = $dataImpl
+      """
+
+      genRecord(schema, ancestors, fields :+ dataDef)
+    }
+
+    /** Create a specialized record
+      *
+      * By providing implementations for all or some primitive types,
+      * boxing can be avoided.
+      *
+      * @param schema List of (field name, field type) tuples
+      * @param ancestors Traits that are mixed into the resulting R
+      *    (e.g. Serializable). Make sure the idents are fully
+      *    qualified.
+      * @param fields Additional members/fields of the resulting R
+      *    (recommended for private data fields)
+      * @param dataImpl Partial function giving the implementations of
+      *    the __data* methods. If it is not defined for some of the
+      *    __data* methods, {???} will be used instead. ObjectTpe is
+      *    passed in for the generic version.
+      *    Should use the parameter [[fieldName]] of type String and
+      *    return a value of a corresponding type.
+      */
+    def spRecord(schema: Seq[(String, Type)])(
+      ancestors: Ident*)(fields: Tree*)(
+      dataImpl: PartialFunction[Type,Tree]): Tree = {
+
+      import definitions._
+
+      def impl(tpe: Type) =
+        dataImpl.applyOrElse(tpe, (_: Type) => q"???")
+
+      val dataDefs = q"""
+        override def __dataBoolean(fieldName: String): Boolean =
+          ${impl(BooleanTpe)}
+        override def __dataByte(fieldName: String): Byte =
+          ${impl(ByteTpe)}
+        override def __dataShort(fieldName: String): Short =
+          ${impl(ShortTpe)}
+        override def __dataChar(fieldName: String): Char =
+          ${impl(CharTpe)}
+        override def __dataInt(fieldName: String): Int =
+          ${impl(IntTpe)}
+        override def __dataLong(fieldName: String): Long =
+          ${impl(LongTpe)}
+        override def __dataFloat(fieldName: String): Float =
+          ${impl(FloatTpe)}
+        override def __dataDouble(fieldName: String): Double =
+          ${impl(DoubleTpe)}
+        override def __dataObj[T : _root_.scala.reflect.ClassTag](fieldName: String): T =
+          ${impl(ObjectTpe)}
+      """
+
+      genRecord(schema, ancestors, fields :+ dataDefs)
+    }
+
+    /** Generlalized record.
+      * Implementation is totally left to the caller
+      */
+    def genRecord(schema: Seq[(String, Type)], ancestors: Seq[Ident],
+        impl: Seq[Tree]): Tree = {
       def fieldTree(i: Int, name: String, tpe: Type): Tree =
         q"""
           def ${newTermName(name).encodedName.toTermName}: $tpe =
@@ -38,8 +106,7 @@ object Macros {
         q"""
         import scala.language.experimental.macros
         class Workaround extends _root_.records.R with ..$ancestors {
-          ..$fields
-          def __data[T](fieldName: String): T = $dataImpl
+          ..$impl
           ..$macroFields
         }
         new Workaround()
@@ -48,14 +115,13 @@ object Macros {
         q"""
         import scala.language.experimental.macros
         new _root_.records.R with ..$ancestors {
-          ..$fields
-          def __data[T](fieldName: String): T = $dataImpl
+          ..$impl
           ..$macroFields
         }
         """
       }
 
-      c.Expr(resultTree)
+      resultTree
     }
 
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[R] = {
@@ -79,7 +145,38 @@ object Macros {
       val args = tuples.map { case (s,v) => q"($s,$v)" }
       val data = q"Map[String,Any](..$args)"
 
-      record(schema)()(q"private val _data = $data")(q"_data(fieldName).asInstanceOf[T]")
+      val resultTree =
+        record(schema)()(
+          q"private val _data = $data")(
+          q"_data(fieldName).asInstanceOf[T]")
+
+      c.Expr[R](resultTree)
+    }
+
+    /** Generate a specialized data access on a record */
+    def accessData(receiver: Tree, fieldName: String, tpe: Type): Tree = {
+      import definitions._
+
+      tpe match {
+        case BooleanTpe =>
+          q"$receiver.__dataBoolean($fieldName)"
+        case ByteTpe =>
+          q"$receiver.__dataByte($fieldName)"
+        case ShortTpe =>
+          q"$receiver.__dataShort($fieldName)"
+        case CharTpe =>
+          q"$receiver.__dataChar($fieldName)"
+        case IntTpe =>
+          q"$receiver.__dataInt($fieldName)"
+        case LongTpe =>
+          q"$receiver.__dataLong($fieldName)"
+        case FloatTpe =>
+          q"$receiver.__dataFloat($fieldName)"
+        case DoubleTpe =>
+          q"$receiver.__dataDouble($fieldName)"
+        case _ =>
+          q"$receiver.__dataObj[$tpe]($fieldName)"
+      }
     }
 
     private def checkDuplicate(schema: Seq[(String, c.Type)]): Unit = {
@@ -113,7 +210,11 @@ object Macros {
 
     val fieldName = newTermName(c.macroApplication.symbol.name.toString).decoded
     val tpe = implicitly[c.WeakTypeTag[T]].tpe
-    c.Expr[T](q"${c.prefix.tree}.__data[$tpe]($fieldName)")
+
+    val applyTree =
+      new RecordMacros[c.type](c).accessData(c.prefix.tree, fieldName, tpe)
+
+    c.Expr[T](applyTree)
   }
 
 }
