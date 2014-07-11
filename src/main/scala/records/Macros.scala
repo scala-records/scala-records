@@ -10,7 +10,6 @@ object Macros {
   import whitebox.Context
 
   class RecordMacros[C <: Context](val c: C) {
-    import Compat210._
     import c.universe._
 
     /** Create a generalized Record
@@ -25,9 +24,12 @@ object Macros {
       *    Should use the parameter [[fieldName]] of type String and
       *    return a value of a corresponding type.
       */
-    def record(schema: Seq[(String, Type)])(ancestors: Ident*)(fields: Tree*)(dataImpl: Tree) = {
+    def record(schema: Seq[(String, Type)])(
+      ancestors: Ident*)(fields: Tree*)(dataImpl: Tree) = {
       def fieldTree(i: Int, name: String, tpe: Type): Tree =
-        q"def ${newTermName(name).encodedName.toTermName}: $tpe = macro records.Macros.selectField_impl[$tpe]"
+        q"""
+          def ${newTermName(name).encodedName.toTermName}: $tpe =
+            macro _root_.records.Macros.selectField_impl[$tpe]"""
 
       val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
@@ -83,7 +85,7 @@ object Macros {
     private def checkDuplicate(schema: Seq[(String, c.Type)]): Unit = {
       val duplicateFields = schema.groupBy(_._1).filter(_._2.size > 1)
       if (duplicateFields.nonEmpty) {
-        val fields = duplicateFields.keys
+        val fields = duplicateFields.keys.toList.sorted
         if (fields.size == 1)
           c.abort(NoPosition, s"Field ${fields.head} is defined more than once.")
         else
