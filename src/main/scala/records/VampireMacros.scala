@@ -83,7 +83,7 @@ object Macros {
     private def checkDuplicate(schema: Seq[(String, c.Type)]): Unit = {
       val duplicateFields = schema.groupBy(_._1).filter(_._2.size > 1)
       if (duplicateFields.nonEmpty) {
-        val fields = duplicateFields.keys
+        val fields = duplicateFields.keys.toList.sorted
         if (fields.size == 1)
           c.abort(NoPosition, s"Field ${fields.head} is defined more than once.")
         else
