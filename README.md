@@ -14,6 +14,8 @@ This project is about designing a data type for database records. Currently it i
    ```
    + Fixing [SI-7340](https://issues.scala-lang.org/browse/SI-7340) would resolve this issue.
 
+2. Records will not work in IntelliJ IDEA. IntelliJ does not support whitebox macros.
+
 ### For Scala 2.10.x
 
 1. All record calls will fire a warning for a reflective macro call.
