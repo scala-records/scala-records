@@ -1,10 +1,11 @@
 import sbt._
 import Keys._
-import scalariform.formatter.preferences._
+import com.typesafe.sbt.SbtScalariform
+import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object BuildSettings {
   val paradiseVersion = "2.0.0"
-  val buildSettings = Defaults.defaultSettings ++ Seq(
+  val buildSettings = Defaults.defaultSettings ++ SbtScalariform.scalariformSettings ++ Seq(
     organization := "records",
     version := "0.1-SNAPSHOT",
     licenses := Seq("New BSD" -> url("https://raw2.github.com/vjovanov/refined-records/master/LICENSE")),
@@ -23,10 +24,9 @@ object BuildSettings {
         "org.scalatest" % "scalatest_2.11" % "2.2.0" % "test"
       else
         "org.scalatest" %% "scalatest" % "2.2.0" % "test"
-    }
-    // SbtScalariform.scalariformSettings
-    // ScalariformKeys.preferences in Compile := formattingPreferences,
-    // ScalariformKeys.preferences in Test    := formattingPreferences
+    },
+    ScalariformKeys.preferences in Compile := formattingPreferences,
+    ScalariformKeys.preferences in Test    := formattingPreferences
   )
 
   val macroBuildSettings = buildSettings ++ Seq(

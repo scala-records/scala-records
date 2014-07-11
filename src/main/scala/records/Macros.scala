@@ -12,21 +12,22 @@ object Macros {
   class RecordMacros[C <: Context](val c: C) {
     import c.universe._
 
-    /** Create a Record
-      *
-      * This creates a simple record that implements __data. As a
-      * consequence it needs to box when used with primitive types.
-      *
-      * @param schema List of (field name, field type) tuples
-      * @param ancestors Traits that are mixed into the resulting R
-      *    (e.g. Serializable). Make sure the idents are fully
-      *    qualified.
-      * @param fields Additional members/fields of the resulting R
-      *    (recommended for private data fields)
-      * @param dataImpl Implementation of the [[__data]] method.
-      *    Should use the parameter [[fieldName]] of type String and
-      *    return a value of a corresponding type.
-      */
+    /**
+     * Create a Record
+     *
+     * This creates a simple record that implements __data. As a
+     * consequence it needs to box when used with primitive types.
+     *
+     * @param schema List of (field name, field type) tuples
+     * @param ancestors Traits that are mixed into the resulting R
+     *    (e.g. Serializable). Make sure the idents are fully
+     *    qualified.
+     * @param fields Additional members/fields of the resulting R
+     *    (recommended for private data fields)
+     * @param dataImpl Implementation of the [[__data]] method.
+     *    Should use the parameter [[fieldName]] of type String and
+     *    return a value of a corresponding type.
+     */
     def record(schema: Seq[(String, Type)])(
       ancestors: Ident*)(fields: Tree*)(dataImpl: Tree): Tree = {
 
@@ -38,27 +39,28 @@ object Macros {
       genRecord(schema, ancestors, fields :+ dataDef)
     }
 
-    /** Create a specialized record
-      *
-      * By providing implementations for all or some primitive types,
-      * boxing can be avoided.
-      *
-      * @param schema List of (field name, field type) tuples
-      * @param ancestors Traits that are mixed into the resulting R
-      *    (e.g. Serializable). Make sure the idents are fully
-      *    qualified.
-      * @param fields Additional members/fields of the resulting R
-      *    (recommended for private data fields)
-      * @param dataImpl Partial function giving the implementations of
-      *    the __data* methods. If it is not defined for some of the
-      *    __data* methods, {???} will be used instead. ObjectTpe is
-      *    passed in for the generic version.
-      *    Should use the parameter [[fieldName]] of type String and
-      *    return a value of a corresponding type.
-      */
+    /**
+     * Create a specialized record
+     *
+     * By providing implementations for all or some primitive types,
+     * boxing can be avoided.
+     *
+     * @param schema List of (field name, field type) tuples
+     * @param ancestors Traits that are mixed into the resulting R
+     *    (e.g. Serializable). Make sure the idents are fully
+     *    qualified.
+     * @param fields Additional members/fields of the resulting R
+     *    (recommended for private data fields)
+     * @param dataImpl Partial function giving the implementations of
+     *    the __data* methods. If it is not defined for some of the
+     *    __data* methods, {???} will be used instead. ObjectTpe is
+     *    passed in for the generic version.
+     *    Should use the parameter [[fieldName]] of type String and
+     *    return a value of a corresponding type.
+     */
     def spRecord(schema: Seq[(String, Type)])(
       ancestors: Ident*)(fields: Tree*)(
-      dataImpl: PartialFunction[Type,Tree]): Tree = {
+        dataImpl: PartialFunction[Type, Tree]): Tree = {
 
       import definitions._
 
@@ -89,11 +91,12 @@ object Macros {
       genRecord(schema, ancestors, fields :+ dataDefs)
     }
 
-    /** Generlalized record.
-      * Implementation is totally left to the caller
-      */
+    /**
+     * Generlalized record.
+     * Implementation is totally left to the caller
+     */
     def genRecord(schema: Seq[(String, Type)], ancestors: Seq[Ident],
-        impl: Seq[Tree]): Tree = {
+                  impl: Seq[Tree]): Tree = {
       def fieldTree(i: Int, name: String, tpe: Type): Tree =
         q"""
           def ${newTermName(name).encodedName.toTermName}: $tpe =
@@ -128,9 +131,9 @@ object Macros {
       val constantLiteralsMsg =
         "Records can only be constructed with constant keys (string literals)."
       val tuples = v.map(_.tree).map {
-        case Literal(Constant(s: String)) -> v => (s, v)
-        case q"(${Literal(Constant(s: String))}, $v)" => (s,v)
-        case q"($k, $v)"  =>
+        case Literal(Constant(s: String)) -> v          => (s, v)
+        case q"(${ Literal(Constant(s: String)) }, $v)" => (s, v)
+        case q"($k, $v)" =>
           c.abort(NoPosition, constantLiteralsMsg)
         case _ -> _ =>
           c.abort(NoPosition, constantLiteralsMsg)
@@ -138,17 +141,17 @@ object Macros {
           c.abort(NoPosition, "Records can only be constructed with tuples (a, b) and arrows a -> b.")
       }
 
-      val schema = tuples.map { case (s,v) => (s, v.tpe.widen) }
+      val schema = tuples.map { case (s, v) => (s, v.tpe.widen) }
 
       checkDuplicate(schema)
 
-      val args = tuples.map { case (s,v) => q"($s,$v)" }
+      val args = tuples.map { case (s, v) => q"($s,$v)" }
       val data = q"Map[String,Any](..$args)"
 
       val resultTree =
         record(schema)()(
           q"private val _data = $data")(
-          q"_data(fieldName).asInstanceOf[T]")
+            q"_data(fieldName).asInstanceOf[T]")
 
       c.Expr[R](resultTree)
     }
@@ -193,9 +196,9 @@ object Macros {
     object -> {
       def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
         // Scala 2.11.x
-        case q"scala.this.Predef.ArrowAssoc[..${_}]($a).->[..${_}]($b)" => Some((a,b))
+        case q"scala.this.Predef.ArrowAssoc[..${ _ }]($a).->[..${ _ }]($b)" => Some((a, b))
         // Scala 2.10.x
-        case q"scala.this.Predef.any2ArrowAssoc[..${_}]($a).->[..${_}]($b)" => Some((a,b))
+        case q"scala.this.Predef.any2ArrowAssoc[..${ _ }]($a).->[..${ _ }]($b)" => Some((a, b))
         case _ => None
       }
     }
@@ -205,7 +208,7 @@ object Macros {
   def apply_impl(c: Context)(v: c.Expr[(String, Any)]*): c.Expr[R] =
     new RecordMacros[c.type](c).recordApply(v)
 
-  def selectField_impl[T : c.WeakTypeTag](c: Context): c.Expr[T] = {
+  def selectField_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._
 
     val fieldName = newTermName(c.macroApplication.symbol.name.toString).decoded
