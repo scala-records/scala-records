@@ -24,13 +24,12 @@ object TypecheckingMacros {
           expected foreach { msg0 =>
             if (errMsg != msg0)
               c.abort(c.enclosingPosition,
-                      s"Type error messages mismatch.\nExpected: $msg0\nFound: $errMsg")
+                s"Type error messages mismatch.\nExpected: $msg0\nFound: $errMsg")
           }
       }
       c.Expr(q"()")
     }
   }
-
 
   def typed(c: Context)(what: c.Expr[String]): c.Expr[Unit] = {
     import c.universe._

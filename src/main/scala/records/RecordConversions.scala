@@ -13,15 +13,13 @@ object RecordConversions {
   import scala.reflect.macros._
   import whitebox.Context
 
-  implicit def recordToCaseClass[From <: R, To <: Product]: From => To =
-    macro recordToCaseClass_impl[From, To]
+  implicit def recordToCaseClass[From <: R, To <: Product]: From => To = macro recordToCaseClass_impl[From, To]
 
-  def recordToCaseClass_impl[From <: R : c.WeakTypeTag,
-    To <: Product : c.WeakTypeTag](c: Context): c.Expr[To] =
+  def recordToCaseClass_impl[From <: R: c.WeakTypeTag, To <: Product: c.WeakTypeTag](c: Context): c.Expr[To] =
     new ConversionMacros[c.type](c).recordToCaseClass[From, To]
 
-  def fromRecord_impl[From <: R : c.WeakTypeTag, To: c.WeakTypeTag](
-      c: Context): c.Expr[To] = {
+  def fromRecord_impl[From <: R: c.WeakTypeTag, To: c.WeakTypeTag](
+    c: Context): c.Expr[To] = {
     import c.universe._
     val fromType = c.weakTypeTag[From].tpe
     val toType = c.weakTypeTag[To].tpe
@@ -30,11 +28,10 @@ object RecordConversions {
   }
 
   class ConversionMacros[C <: Context](override val c: C)
-      extends RecordMacros[C](c) with Internal210 {
+    extends RecordMacros[C](c) with Internal210 {
     import c.universe._
 
-    def recordToCaseClass[From <: R : c.WeakTypeTag,
-      To <: Product : c.WeakTypeTag]: c.Expr[To] = {
+    def recordToCaseClass[From <: R: c.WeakTypeTag, To <: Product: c.WeakTypeTag]: c.Expr[To] = {
       import c.universe._
 
       val validImplicit = c.openImplicits.collectFirst {
@@ -54,7 +51,7 @@ object RecordConversions {
       }
     }
 
-    def createFromRecord[From <: R : WeakTypeTag, To : WeakTypeTag](
+    def createFromRecord[From <: R: WeakTypeTag, To: WeakTypeTag](
       fromType: Type, toType: Type, rec: Tree): c.Expr[To] = {
       val toSym = toType.typeSymbol
 
@@ -70,7 +67,7 @@ object RecordConversions {
       if (missingFields.size > 0) {
         c.abort(NoPosition,
           s"Converting to $toType would require the source record to have the " +
-          s"following additional fields: ${missingFields.mkString("[", ", ", "]")}.")
+            s"following additional fields: ${missingFields.mkString("[", ", ", "]")}.")
       }
       val args = for ((fname, ftpe) <- toFlds) yield {
         val fType = fromFlds(fname)
@@ -78,7 +75,7 @@ object RecordConversions {
         if (!(fType <:< ftpe)) {
           c.abort(NoPosition,
             s"Type of field $fname of source record ($fType) " +
-            s"doesn't conform the expected type ($ftpe).")
+              s"doesn't conform the expected type ($ftpe).")
         }
 
         accessData(q"$tmpTerm", fname, ftpe)
