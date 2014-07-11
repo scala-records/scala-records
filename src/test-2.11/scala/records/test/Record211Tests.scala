@@ -18,7 +18,23 @@ class Record211Tests extends FlatSpec with Matchers {
     people.last.name should be ("Ahir")
 
   }
-  it should "lub different records properly" 
+
+  it should "lub different records properly" in {
+    val x = List(R("age" -> 2, "name" -> "Heather"), R("age" -> 3, "name" -> "Tobias"))
+
+    x.head.age should be (2)
+    x.last.age should be (3)
+
+    val r = if (true) R("age" -> 2, "name" -> "Tobias") else R("age" -> 1, "name" -> "Heather")
+    r.age should be (2)
+
+    val r1 = true match {
+      case true => R("age" -> 3, "name" -> "Hubert")
+      case false => R("age" -> 3, "name" -> "Hubert")
+    }
+    r1.age should be (3)
+  }
+
   it should "be able to convert to complex case classes" in {
 
     val data = List(

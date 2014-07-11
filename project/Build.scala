@@ -7,7 +7,7 @@ object BuildSettings {
   val buildSettings = Defaults.defaultSettings ++ Seq(
     organization := "records",
     version := "0.1-SNAPSHOT",
-    licenses := Seq("New BSD" -> url("https://raw2.github.com/vjovanov/yin-yang/master/LICENSE")),
+    licenses := Seq("New BSD" -> url("https://raw2.github.com/vjovanov/refined-records/master/LICENSE")),
     scalacOptions ++= Seq("-deprecation", "-feature"),
     organizationHomepage := Some(url("http://lamp.epfl.ch")),
     autoAPIMappings := true,
