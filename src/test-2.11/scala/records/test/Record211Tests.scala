@@ -45,6 +45,22 @@ class Record211Tests extends FlatSpec with Matchers {
 
     recs should be (List("Hans", "Peter", "Chuck"))
   }
+  
+  it should "lub different records in different contexts" in {
+    val x = List(R("age" -> 2, "name" -> "Heather"), R("age" -> 3, "name" -> "Tobias"))
+
+    x.head.age should be (2)
+    x.last.age should be (3)
+
+    val r = if (true) R("age" -> 2, "name" -> "Tobias") else R("age" -> 1, "name" -> "Heather")
+    r.age should be (2)
+
+    val r1 = true match {
+      case true => R("age" -> 3, "name" -> "Hubert")
+      case false => R("age" -> 3, "name" -> "Hubert")
+    }
+    r1.age should be (3)
+  }
 
   it should "implicitly convert to a case class in a val position" in {
     import records.RecordConversions.recordToCaseClass
