@@ -11,9 +11,11 @@ object RecordConversions {
   import scala.reflect.macros._
   import whitebox.Context
 
-  implicit def recordToCaseClass[From <: R, To <: Product]: From => To = macro recordToCaseClass_impl[From, To]
+  implicit def recordToCaseClass[From <: R, To <: Product]: From => To =
+    macro recordToCaseClass_impl[From, To]
 
-  def recordToCaseClass_impl[From <: R : c.WeakTypeTag, To <: Product : c.WeakTypeTag](c: Context): c.Expr[To] =
+  def recordToCaseClass_impl[From <: R : c.WeakTypeTag,
+    To <: Product : c.WeakTypeTag](c: Context): c.Expr[To] =
     new ConversionMacros[c.type](c).recordToCaseClass[From, To]
 
   def fromRecord_impl[From <: R : c.WeakTypeTag, To: c.WeakTypeTag](
@@ -21,13 +23,15 @@ object RecordConversions {
     import c.universe._
     val fromType = c.weakTypeTag[From].tpe
     val toType = c.weakTypeTag[To].tpe
-    new ConversionMacros[c.type](c).createFromRecord[From, To](fromType, toType, q"${c.prefix.tree}.record")
+    new ConversionMacros[c.type](c).createFromRecord[From, To](
+      fromType, toType, q"${c.prefix.tree}.record")
   }
 
   class ConversionMacros[C <: Context](val c: C) extends Internal210 {
     import c.universe._
 
-    def recordToCaseClass[From <: R : c.WeakTypeTag, To <: Product : c.WeakTypeTag]: c.Expr[To] = {
+    def recordToCaseClass[From <: R : c.WeakTypeTag,
+      To <: Product : c.WeakTypeTag]: c.Expr[To] = {
       import c.universe._
 
       val validImplicit = c.openImplicits.collectFirst {
@@ -47,23 +51,25 @@ object RecordConversions {
       }
     }
 
-    def createFromRecord[From <: R : WeakTypeTag, To : WeakTypeTag](fromType: Type, toType: Type, rec: Tree): c.Expr[To] = {
+    def createFromRecord[From <: R : WeakTypeTag, To : WeakTypeTag](
+      fromType: Type, toType: Type, rec: Tree): c.Expr[To] = {
       val toSym = toType.typeSymbol
 
       if (!toSym.asClass.isCaseClass) {
         c.abort(NoPosition,
-          "Currently, Records can only be converted to case classes.")
+          s"Records can only be converted to case classes; $toType is not a case class.")
       }
 
       val fromFlds = recordFields(fromType).toMap
       val toFlds = caseClassFields(toType)
       val tmpTerm = newTermName(c.fresh("tmp$"))
+      val missingFields = toFlds.map(_._1).filterNot(fromFlds.contains(_))
+      if (missingFields.size > 0) {
+        c.abort(NoPosition,
+          s"Converting to $toType would require the source record to have the " +
+          s"following additional fields: ${missingFields.mkString("[", ", ", "]")}.")
+      }
       val args = for ((fname, ftpe) <- toFlds) yield {
-        if (!fromFlds.contains(fname)) {
-          c.abort(NoPosition,
-            s"Source record is missing field $fname.")
-        }
-
         val fType = fromFlds(fname)
 
         if (!(fType <:< ftpe)) {

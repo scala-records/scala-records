@@ -33,8 +33,8 @@ object BuildSettings {
     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
     libraryDependencies ++= {
       if (scalaBinaryVersion.value == "2.10") Seq(
-          compilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
-          "org.scalamacros" %% "quasiquotes" % "2.0.0" cross CrossVersion.binary
+          compilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
+          "org.scalamacros" %% "quasiquotes" % paradiseVersion cross CrossVersion.binary
       ) else Nil
     }
   )
@@ -52,33 +52,11 @@ object BuildSettings {
 object MyBuild extends Build {
   import BuildSettings._
 
-  lazy val root = Project(
-    "root",
+  lazy val refinedRecords = Project(
+    "refinedRecords",
     file("."),
-    settings = buildSettings ++ Seq(
+    settings = macroBuildSettings ++ Seq(
       name := "refined-records",
-      run <<= run in Compile in core,
-      console <<= console in Compile in core
-    )
-  ) aggregate(macros, core, common)
-
-  lazy val common = Project(
-    "common",
-    file("common"),
-    settings = macroBuildSettings ++ (
-      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _))
-  )
-
-  lazy val macros: Project = Project(
-    "macros",
-    file("macros"),
-    settings = macroBuildSettings
-  ) dependsOn(common)
-
-  lazy val core = Project(
-    "core",
-    file("core"),
-    settings = buildSettings ++ Seq(
       unmanagedSourceDirectories in Test ++= {
         if (scalaBinaryVersion.value == "2.11" ||
             scalaVersion.value == "2.12.0-SNAPSHOTS")
@@ -87,5 +65,6 @@ object MyBuild extends Build {
           Seq()
       }
     )
-  ) dependsOn(macros, common)
+  )
+
 }

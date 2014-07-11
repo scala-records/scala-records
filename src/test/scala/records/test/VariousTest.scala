@@ -51,13 +51,17 @@ class VariousTests extends FlatSpec with Matchers {
   it should "allow strange field names" in {
     val record = R(
       "type" -> "R",
-      "blank space" -> " ",
-      "1" -> 1
+      "blank space" -> "blank space",
+      "1" -> 1,
+      "1>2" -> "1>2",
+      "豆贝尔维" -> "dòu bèi ěr wéi"
     )
 
     record.`type` should be ("R")
-    // record.`blank space` should be (" ") // does not work
+    record.`blank space` should be ("blank space")
     record.`1` should be (1)
+    record.`1>2` should be ("1>2")
+    record.`豆贝尔维` should be ("dòu bèi ěr wéi")
   }
 
   it should "allow to read the value in a closure" in {
@@ -136,4 +140,5 @@ class VariousTests extends FlatSpec with Matchers {
     row.bar should be (2.3)
     row.baz should be (1.7)
   }
+
 }
