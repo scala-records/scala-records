@@ -5,7 +5,7 @@ import org.scalatest._
 // This is for 2.10.x compatibility!
 import scala.language.reflectiveCalls
 
-class VariousTests extends FlatSpec with Matchers {
+class BasicTests extends FlatSpec with Matchers {
 
   def defRecord(age: Int = 2) = records.R(
     "age" -> age,
