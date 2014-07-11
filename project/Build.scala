@@ -1,19 +1,21 @@
 import sbt._
 import Keys._
+import scalariform.formatter.preferences._
 
 object BuildSettings {
   val paradiseVersion = "2.0.0"
   val buildSettings = Defaults.defaultSettings ++ Seq(
     organization := "records",
     version := "0.1-SNAPSHOT",
-    //scalacOptions += "-Xlog-implicits",
-    //scalacOptions += "-Xprint:cleanup",
+    licenses := Seq("New BSD" -> url("https://raw2.github.com/vjovanov/yin-yang/master/LICENSE")),
     scalacOptions ++= Seq("-deprecation", "-feature"),
+    organizationHomepage := Some(url("http://lamp.epfl.ch")),
     autoAPIMappings := true,
     scalaVersion := "2.11.1",
+    scmInfo := Some(ScmInfo(url("https://github.com/vjovanov/refined-records.git"),"git://github.com/vjovanov/refined-records.git")),
     crossScalaVersions := Seq(
       "2.10.2", "2.10.3", "2.10.4",
-      "2.11.0", "2.11.1",
+      "2.11.0", "2.11.1", "2.11.2-SHAPSHOT",
       "2.12.0-SNAPSHOT"),
     resolvers += Resolver.sonatypeRepo("snapshots"),
     libraryDependencies += {
@@ -22,6 +24,9 @@ object BuildSettings {
       else
         "org.scalatest" %% "scalatest" % "2.2.0" % "test"
     }
+    // SbtScalariform.scalariformSettings
+    // ScalariformKeys.preferences in Compile := formattingPreferences,
+    // ScalariformKeys.preferences in Test    := formattingPreferences
   )
 
   val macroBuildSettings = buildSettings ++ Seq(
@@ -33,6 +38,14 @@ object BuildSettings {
       ) else Nil
     }
   )
+
+  def formattingPreferences = {
+    import scalariform.formatter.preferences._
+    FormattingPreferences()
+    .setPreference(RewriteArrowSymbols, false)
+    .setPreference(AlignParameters, true)
+    .setPreference(AlignSingleLineCaseStatements, true)
+  }
 }
 
 

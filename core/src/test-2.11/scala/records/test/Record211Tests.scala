@@ -18,7 +18,7 @@ class Record211Tests extends FlatSpec with Matchers {
     people.last.name should be ("Ahir")
 
   }
-
+  it should "lub different records properly" 
   it should "be able to convert to complex case classes" in {
 
     val data = List(
