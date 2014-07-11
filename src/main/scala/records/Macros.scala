@@ -39,7 +39,7 @@ object Macros {
         import scala.language.experimental.macros
         class Workaround extends _root_.records.R with ..$ancestors {
           ..$fields
-          def __data[T](fieldName: String): T = $dataImpl
+          override def __data[T : _root_.scala.reflect.ClassTag](fieldName: String): T = $dataImpl
           ..$macroFields
         }
         new Workaround()
@@ -49,7 +49,7 @@ object Macros {
         import scala.language.experimental.macros
         new _root_.records.R with ..$ancestors {
           ..$fields
-          def __data[T](fieldName: String): T = $dataImpl
+          override def __data[T : _root_.scala.reflect.ClassTag](fieldName: String): T = $dataImpl
           ..$macroFields
         }
         """
@@ -80,6 +80,32 @@ object Macros {
       val data = q"Map[String,Any](..$args)"
 
       record(schema)()(q"private val _data = $data")(q"_data(fieldName).asInstanceOf[T]")
+    }
+
+    /** Generate a specialized data access on a record */
+    def accessData(receiver: Tree, fieldName: String, tpe: Type): Tree = {
+      import definitions._
+
+      tpe match {
+        case BooleanTpe =>
+          q"$receiver.__dataBoolean($fieldName)"
+        case ByteTpe =>
+          q"$receiver.__dataByte($fieldName)"
+        case ShortTpe =>
+          q"$receiver.__dataShort($fieldName)"
+        case CharTpe =>
+          q"$receiver.__dataChar($fieldName)"
+        case IntTpe =>
+          q"$receiver.__dataInt($fieldName)"
+        case LongTpe =>
+          q"$receiver.__dataLong($fieldName)"
+        case FloatTpe =>
+          q"$receiver.__dataFloat($fieldName)"
+        case DoubleTpe =>
+          q"$receiver.__dataDouble($fieldName)"
+        case _ =>
+          q"$receiver.__dataObj[$tpe]($fieldName)"
+      }
     }
 
     private def checkDuplicate(schema: Seq[(String, c.Type)]): Unit = {
@@ -113,7 +139,11 @@ object Macros {
 
     val fieldName = newTermName(c.macroApplication.symbol.name.toString).decoded
     val tpe = implicitly[c.WeakTypeTag[T]].tpe
-    c.Expr[T](q"${c.prefix.tree}.__data[$tpe]($fieldName)")
+
+    val applyTree =
+      new RecordMacros[c.type](c).accessData(c.prefix.tree, fieldName, tpe)
+
+    c.Expr[T](applyTree)
   }
 
 }
