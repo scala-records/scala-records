@@ -15,16 +15,23 @@ object RecordConversions {
 
   implicit def recordToCaseClass[From <: R, To <: Product]: From => To = macro recordToCaseClass_impl[From, To]
 
-  def recordToCaseClass_impl[From <: R: c.WeakTypeTag, To <: Product: c.WeakTypeTag](c: Context): c.Expr[To] =
+  def recordToCaseClass_impl[From <: R: c.WeakTypeTag, To <: Product: c.WeakTypeTag](
+    c: Context): c.Expr[To] =
     new ConversionMacros[c.type](c).recordToCaseClass[From, To]
 
-  def fromRecord_impl[From <: R: c.WeakTypeTag, To: c.WeakTypeTag](
+  def toCaseClass_impl[From <: R: c.WeakTypeTag, To: c.WeakTypeTag](
     c: Context): c.Expr[To] = {
     import c.universe._
-    val fromType = c.weakTypeTag[From].tpe
-    val toType = c.weakTypeTag[To].tpe
-    new ConversionMacros[c.type](c).createFromRecord[From, To](
-      fromType, toType, q"${c.prefix.tree}.record")
+    val (fromType, toType) = (c.weakTypeTag[From].tpe, c.weakTypeTag[To].tpe)
+    val tree = q"${c.prefix.tree}.record"
+    new ConversionMacros[c.type](c).createFromRecord(fromType, toType, tree)
+  }
+
+  def convertRecord_impl[To: c.WeakTypeTag](
+    c: Context)(record: c.Expr[R]): c.Expr[To] = {
+    import c.universe._
+    val (fromType, toType) = (record.tree.tpe, c.weakTypeTag[To].tpe)
+    new ConversionMacros[c.type](c).createFromRecord(fromType, toType, record.tree)
   }
 
   class ConversionMacros[C <: Context](override val c: C)
@@ -46,13 +53,12 @@ object RecordConversions {
           val TypeRef(_, _, _ :: retType :: Nil) = tp.normalize
           val fromType = weakTypeTag[From].tpe
           val toType = retType.normalize
-          val conversionTree = createFromRecord[From, To](fromType, toType, Ident("arg"))
+          val conversionTree = createFromRecord(fromType, toType, Ident("arg"))
           c.Expr(q"(((arg: ${TypeTree()}) => {$conversionTree}): $tp)")
       }
     }
 
-    def createFromRecord[From <: R: WeakTypeTag, To: WeakTypeTag](
-      fromType: Type, toType: Type, rec: Tree): c.Expr[To] = {
+    def createFromRecord[To](fromType: Type, toType: Type, rec: Tree): c.Expr[To] = {
       val toSym = toType.typeSymbol
 
       if (!toSym.asClass.isCaseClass) {

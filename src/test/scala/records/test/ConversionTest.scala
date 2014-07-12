@@ -4,6 +4,9 @@ import org.scalatest._
 
 import records.R
 
+// This is for 2.10.x compatibility!
+import scala.language.reflectiveCalls
+
 class ConversionTests extends FlatSpec with Matchers {
 
   case class SimpleVal(a: Int)
@@ -29,5 +32,14 @@ class ConversionTests extends FlatSpec with Matchers {
     val y = x.to[ObjectVal]
 
     y.myObject should be("String")
+  }
+
+  it should "allow conversion if there is a `to` field" in {
+    import records._
+    val record = R("to" -> "R")
+    case class ToHolder(to: String)
+
+    record.to should be("R")
+    convertRecord[ToHolder](record) should be(ToHolder("R"))
   }
 }

@@ -7,8 +7,12 @@ import scala.reflect._
 object R {
   def apply(v: (String, Any)*): R = macro records.Macros.apply_impl
 
+  /**
+   * An extension method for converting records into case classes.
+   * It is implemented as an extension to avoid collision with the record fields.
+   */
   implicit class ConvertR[From <: R](val record: From) extends AnyVal {
-    def to[To]: To = macro RecordConversions.fromRecord_impl[From, To]
+    def to[To]: To = macro RecordConversions.toCaseClass_impl[From, To]
   }
 }
 
