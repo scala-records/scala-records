@@ -40,6 +40,11 @@ trait Internal210 { self =>
     def paramLists = sym.paramss
   }
 
+  implicit class RichFlag(val flagValues: FlagValues) {
+    // copied from Scalac source, since not available in 2.10
+    final val SYNTHETIC = (1L << 21).asInstanceOf[FlagSet]
+  }
+
 }
 
 object CompatInfo {

@@ -9,8 +9,10 @@ object Macros {
   import scala.reflect.macros._
   import whitebox.Context
 
-  class RecordMacros[C <: Context](val c: C) {
+  class RecordMacros[C <: Context](val c: C) extends Internal210 {
     import c.universe._
+
+    val rImplMods = Modifiers(Flag.OVERRIDE | Flag.SYNTHETIC)
 
     /**
      * Create a Record
@@ -32,7 +34,7 @@ object Macros {
       ancestors: Ident*)(fields: Tree*)(dataImpl: Tree): Tree = {
 
       val dataDef = q"""
-        override def __data[T : _root_.scala.reflect.ClassTag](
+        $rImplMods def __data[T : _root_.scala.reflect.ClassTag](
           fieldName: String): T = $dataImpl
       """
 
@@ -68,23 +70,23 @@ object Macros {
         dataImpl.applyOrElse(tpe, (_: Type) => q"???")
 
       val dataDefs = q"""
-        override def __dataBoolean(fieldName: String): Boolean =
+        $rImplMods def __dataBoolean(fieldName: String): Boolean =
           ${impl(BooleanTpe)}
-        override def __dataByte(fieldName: String): Byte =
+        $rImplMods def __dataByte(fieldName: String): Byte =
           ${impl(ByteTpe)}
-        override def __dataShort(fieldName: String): Short =
+        $rImplMods def __dataShort(fieldName: String): Short =
           ${impl(ShortTpe)}
-        override def __dataChar(fieldName: String): Char =
+        $rImplMods def __dataChar(fieldName: String): Char =
           ${impl(CharTpe)}
-        override def __dataInt(fieldName: String): Int =
+        $rImplMods def __dataInt(fieldName: String): Int =
           ${impl(IntTpe)}
-        override def __dataLong(fieldName: String): Long =
+        $rImplMods def __dataLong(fieldName: String): Long =
           ${impl(LongTpe)}
-        override def __dataFloat(fieldName: String): Float =
+        $rImplMods def __dataFloat(fieldName: String): Float =
           ${impl(FloatTpe)}
-        override def __dataDouble(fieldName: String): Double =
+        $rImplMods def __dataDouble(fieldName: String): Double =
           ${impl(DoubleTpe)}
-        override def __dataObj[T : _root_.scala.reflect.ClassTag](fieldName: String): T =
+        $rImplMods def __dataObj[T : _root_.scala.reflect.ClassTag](fieldName: String): T =
           ${impl(ObjectTpe)}
       """
 

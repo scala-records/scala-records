@@ -1,0 +1,4 @@
+<plugin>
+  <name>make-record-data-synthetic</name>
+  <classname>records.plugin.SyntheticPlugin</classname>
+</plugin>
