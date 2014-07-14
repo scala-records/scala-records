@@ -52,11 +52,25 @@ object BuildSettings {
 object MyBuild extends Build {
   import BuildSettings._
 
-  lazy val root = project.in(file(".")).aggregate(core, tests)
+  lazy val root = project.in(file("."))
+    .aggregate(synthPlugin, core, tests)
+
+  lazy val synthPlugin = project
+    .settings(buildSettings: _*)
+    .settings(
+      exportJars := true,
+      crossVersion := CrossVersion.full,
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+        "org.scala-lang" % "scala-reflect" % scalaVersion.value)
+    )
 
   lazy val core = project
     .settings(macroBuildSettings: _*)
-    .settings(name := "Refined-Records Core")
+    .settings(
+      name := "Refined-Records Core",
+      autoCompilerPlugins := true)
+    .dependsOn(synthPlugin % "plugin")
 
   lazy val tests = project
     .settings(macroBuildSettings: _*)
@@ -71,6 +85,7 @@ object MyBuild extends Build {
       }
     )
     .dependsOn(core)
+
 
 }
 
