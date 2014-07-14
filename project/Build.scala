@@ -52,11 +52,16 @@ object BuildSettings {
 object MyBuild extends Build {
   import BuildSettings._
 
-  lazy val refinedRecords = Project(
-    "refinedRecords",
-    file("."),
-    settings = macroBuildSettings ++ Seq(
-      name := "refined-records",
+  lazy val root = project.in(file(".")).aggregate(core, tests)
+
+  lazy val core = project
+    .settings(macroBuildSettings: _*)
+    .settings(name := "Refined-Records Core")
+
+  lazy val tests = project
+    .settings(macroBuildSettings: _*)
+    .settings(
+      name := "Refined-Records Tests",
       unmanagedSourceDirectories in Test ++= {
         if (scalaBinaryVersion.value == "2.11" ||
             scalaVersion.value == "2.12.0-SNAPSHOTS")
@@ -65,6 +70,7 @@ object MyBuild extends Build {
           Seq()
       }
     )
-  )
+    .dependsOn(core)
+
 }
 
