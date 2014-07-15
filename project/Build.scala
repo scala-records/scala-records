@@ -79,7 +79,8 @@ object MyBuild extends Build {
       unmanagedSourceDirectories in Test ++= {
         if (scalaBinaryVersion.value == "2.11" ||
             scalaVersion.value == "2.12.0-SNAPSHOTS")
-          Seq(sourceDirectory.value / "test-2.11" / "scala")
+          // Seq(sourceDirectory.value / "test-2.11" / "scala")
+          Seq()
         else
           Seq()
       }

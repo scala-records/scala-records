@@ -107,7 +107,7 @@ object Macros {
       val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
 
-      val resultTree = if (CompatInfo.isScala210) {
+      val resultTree = if (CompatInfo.isScala210 || true) {
         q"""
         import scala.language.experimental.macros
         class Workaround extends _root_.records.R with ..$ancestors {
