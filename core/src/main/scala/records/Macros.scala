@@ -99,10 +99,42 @@ object Macros {
      */
     def genRecord(schema: Seq[(String, Type)], ancestors: Seq[Ident],
                   impl: Seq[Tree]): Tree = {
-      def fieldTree(i: Int, name: String, tpe: Type): Tree =
+
+      def enclClass(sym: Symbol): Symbol =
+        if (sym.isClass) sym
+        else enclClass(sym.owner)
+
+      def isValidAccessor(methSym: MethodSymbol): Boolean =
+        !methSym.isConstructor && methSym.isPublic && methSym.overrides.isEmpty
+
+      /**
+       * Create a tree for a 'def' of a field.
+       * If a type of the field is yet another record, it will be a class type of the $anon
+       * class (created as part of [[getRecord]]), rather than a pure RefinedType. Therefore
+       * we have to recreate it and provide an appropriate type to the macro call.
+       */
+      def fieldTree(i: Int, name: String, tpe: Type): Tree = {
+        val tpeOfField =
+          if (tpe.baseType(rTpe.typeSymbol) != NoType) { // tpe.isInstanceOf[R] will return false.
+            tpe.typeSymbol.typeSignature match {
+              case cls @ ClassInfoType(parents, decls: Scope, tsym) =>
+                // `cls` has in the scope declarations
+                // for constructor and overriden __data. We want to remove them from
+                // the scope of the RefinedType that we want to define.
+                val decls1: Scope =
+                  decls.filter {
+                    case meth: MethodSymbol => isValidAccessor(meth)
+                    case _                  => false
+                  }.asInstanceOf[Scope]
+                c.internal.refinedType(parents, enclClass(tpe.typeSymbol.owner), decls1, tpe.typeSymbol.pos)
+              case _ =>
+                tpe
+            }
+          } else tpe
         q"""
-          def ${newTermName(name).encodedName.toTermName}: $tpe =
-            macro _root_.records.Macros.selectField_impl[$tpe]"""
+          def ${newTermName(name).encodedName.toTermName}: $tpeOfField =
+            macro _root_.records.Macros.selectField_impl[$tpeOfField]"""
+      }
 
       val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
@@ -204,6 +236,8 @@ object Macros {
         case _ => None
       }
     }
+
+    private lazy val rTpe: Type = implicitly[WeakTypeTag[R]].tpe
 
   }
 
