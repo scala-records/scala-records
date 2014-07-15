@@ -4,6 +4,9 @@ import org.scalatest._
 
 import records.R
 
+// This is for 2.10.x compatibility!
+import scala.language.reflectiveCalls
+
 class ConversionTests extends FlatSpec with Matchers {
 
   case class SimpleVal(a: Int)
@@ -30,4 +33,40 @@ class ConversionTests extends FlatSpec with Matchers {
 
     y.myObject should be("String")
   }
+
+  it should "allow conversion if there is a `to` field" in {
+    import records._
+    val record = R("to" -> "R")
+    case class ToHolder(to: String)
+
+    record.to should be("R")
+    new R.Convert(record).to[ToHolder] should be(ToHolder("R"))
+  }
+
+  it should "allow explicit conversion even when implict conversion is imported" in {
+    import records._
+    import records.RecordConversions._
+    val record = R("field" -> "42")
+    case class FieldHolder(field: String)
+
+    record.to[FieldHolder] should be(FieldHolder("42"))
+  }
+
+  it should "implicitly convert to a case class in a val position" in {
+    import records.RecordConversions._
+    val x: DBRecord = R("name" -> "David", "age" -> 3, "location" -> "Lausanne")
+
+    x.name should be("David")
+  }
+
+  it should "implicitly convert to a case class when constructing a list" in {
+    import records.RecordConversions._
+    val xs = List[DBRecord](
+      R("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
+      R("name" -> "David", "age" -> 3, "location" -> "Lausanne"))
+
+    xs.head.name should be("David")
+    xs.tail.head.name should be("David")
+  }
+
 }
