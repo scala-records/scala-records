@@ -5,14 +5,14 @@ import scala.language.experimental.macros
 import scala.reflect._
 import RecordConversions._
 
-object R {
-  def apply(v: (String, Any)*): R = macro records.Macros.apply_impl
+object Rec {
+  def apply(v: (String, Any)*): Rec = macro records.Macros.apply_impl
 
   /**
    * An extension method for converting records into case classes.
    * It is implemented as an extension to avoid collision with the record fields.
    */
-  implicit class Convert[From <: R](val record: From) extends AnyVal {
+  implicit class Convert[From <: Rec](val record: From) extends AnyVal {
     def to[To]: To = macro RecordConversions.to_impl[From, To]
   }
 }
@@ -28,7 +28,7 @@ object R {
  * versions, but should prefer the specialized versions whenever
  * possible to avoid boxing.
  */
-trait R {
+trait Rec {
   @inline def __data[T: ClassTag](fieldName: String): T = {
     val res = classTag[T] match {
       case ClassTag.Boolean => __dataBoolean(fieldName)

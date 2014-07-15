@@ -13,21 +13,21 @@ object RecordConversions {
   import whitebox.Context
 
   object ConvertRecord {
-    implicit def materializeConvert[From <: R, To]: ConvertRecord[From, To] = macro materializeConvert_impl[From, To]
+    implicit def materializeConvert[From <: Rec, To]: ConvertRecord[From, To] = macro materializeConvert_impl[From, To]
   }
 
   trait ConvertRecord[From, To] {
     def convert(r: From): To
   }
 
-  implicit def convertRecord[From <: R, To](x: From)(implicit ev: ConvertRecord[From, To]): To = ev.convert(x)
+  implicit def convertRecord[From <: Rec, To](x: From)(implicit ev: ConvertRecord[From, To]): To = ev.convert(x)
 
-  def materializeConvert_impl[From <: R: c.WeakTypeTag, To: c.WeakTypeTag](c: Context): c.Expr[ConvertRecord[From, To]] = {
+  def materializeConvert_impl[From <: Rec: c.WeakTypeTag, To: c.WeakTypeTag](c: Context): c.Expr[ConvertRecord[From, To]] = {
     import c.universe._
     new ConversionMacros[c.type](c).findConvertRecordCandidate[From, To]
   }
 
-  def to_impl[From <: R: c.WeakTypeTag, To: c.WeakTypeTag](c: Context): c.Expr[To] = {
+  def to_impl[From <: Rec: c.WeakTypeTag, To: c.WeakTypeTag](c: Context): c.Expr[To] = {
     import c.universe._
     val (fromTpe, toTpe) = (c.weakTypeTag[From].tpe, c.weakTypeTag[To].tpe)
     val typeClass =
@@ -40,7 +40,7 @@ object RecordConversions {
     extends RecordMacros[C](c) with Internal210 {
     import c.universe._
 
-    def findConvertRecordCandidate[From <: R: c.WeakTypeTag, To: c.WeakTypeTag]: c.Expr[ConvertRecord[From, To]] = {
+    def findConvertRecordCandidate[From <: Rec: c.WeakTypeTag, To: c.WeakTypeTag]: c.Expr[ConvertRecord[From, To]] = {
       val allImplicitCandidates = c.openImplicits
         .map { case c.ImplicitCandidate(_, _, tp, tree) => tp.normalize }
 

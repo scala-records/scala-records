@@ -7,7 +7,7 @@ import scala.language.reflectiveCalls
 
 class BasicTest extends FlatSpec with Matchers {
 
-  def defRecord(age: Int = 2) = records.R(
+  def defRecord(age: Int = 2) = records.Rec(
     "age" -> age,
     "name" -> "David")
 
@@ -18,7 +18,7 @@ class BasicTest extends FlatSpec with Matchers {
   }
 
   it should "be created with a special constructor" in {
-    val row = records.R("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
+    val row = records.Rec("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
 
     row.foo should be(1)
     row.bar should be(2.3)
@@ -26,14 +26,14 @@ class BasicTest extends FlatSpec with Matchers {
   }
 
   it should "allow renaming in imports" in {
-    import records.{ R => X }
+    import records.{ Rec => X }
     val row = X("foo" -> 1)
 
     row.foo should be(1)
   }
 
   it should "allow aliases" in {
-    val X = records.R
+    val X = records.Rec
     val row = X("foo" -> 1)
 
     row.foo should be(1)
@@ -41,14 +41,14 @@ class BasicTest extends FlatSpec with Matchers {
 
   it should "be hygienic" in {
     object records {
-      val R = Predef
+      val Rec = Predef
     }
     defRecord(3).age should be(3)
   }
 
-  import records.R
+  import records.Rec
   it should "allow strange field names" in {
-    val record = R(
+    val record = Rec(
       "type" -> "R",
       "blank space" -> "blank space",
       "1" -> 1,
@@ -132,7 +132,7 @@ class BasicTest extends FlatSpec with Matchers {
 
   it should "allow tuples to construct literal rows" in {
 
-    val row = R(("foo", 1), ("bar", 2.3), Tuple2("baz", 1.7))
+    val row = Rec(("foo", 1), ("bar", 2.3), Tuple2("baz", 1.7))
 
     row.foo should be(1)
     row.bar should be(2.3)
@@ -141,9 +141,9 @@ class BasicTest extends FlatSpec with Matchers {
 
   it should "allow nested records" in {
 
-    val x = R("a" -> R("b" -> 1))
+    val x = Rec("a" -> Rec("b" -> 1))
 
-    val y = R("a" -> R("b" -> R("c" -> 1)))
+    val y = Rec("a" -> Rec("b" -> Rec("c" -> 1)))
 
     x.a.b should be(1)
 
