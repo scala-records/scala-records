@@ -29,5 +29,3 @@ This project is about designing a data type for database records. Currently it i
    To disable this users must use an import `import scala.language.reflectiveCalls` or by setting the compiler option `-language:reflectiveCalls`.
 2. Least upper bounds (LUBs) of two records can not be found. Consequences are the following:
    + If two queries return the same records the results can not be directly combined under a same type. For example, `List(R("a" -> 1), R("a" -> 2))` will not be usable.
-
-3. Records can not be implicitly converted into case classes. One must explicitly call `r.to[CaseClassName]`. NOTE: This constraint will probably be removed.

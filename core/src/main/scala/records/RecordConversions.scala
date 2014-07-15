@@ -1,10 +1,9 @@
 package records
 
 import scala.language.experimental.macros
+import scala.language.implicitConversions
 
 import Compat210._
-
-import scala.annotation.StaticAnnotation
 
 import Macros.RecordMacros
 
@@ -13,46 +12,51 @@ object RecordConversions {
   import scala.reflect.macros._
   import whitebox.Context
 
-  implicit def recordToCaseClass[From <: R, To <: Product]: From => To = macro recordToCaseClass_impl[From, To]
+  object ConvertRecord {
+    implicit def materializeConvert[From <: R, To]: ConvertRecord[From, To] = macro materializeConvert_impl[From, To]
+  }
 
-  def recordToCaseClass_impl[From <: R: c.WeakTypeTag, To <: Product: c.WeakTypeTag](c: Context): c.Expr[To] =
-    new ConversionMacros[c.type](c).recordToCaseClass[From, To]
+  trait ConvertRecord[From, To] {
+    def convert(r: From): To
+  }
 
-  def fromRecord_impl[From <: R: c.WeakTypeTag, To: c.WeakTypeTag](
-    c: Context): c.Expr[To] = {
+  implicit def convertRecord[From <: R, To](x: From)(implicit ev: ConvertRecord[From, To]): To = ev.convert(x)
+
+  def materializeConvert_impl[From <: R: c.WeakTypeTag, To: c.WeakTypeTag](c: Context): c.Expr[ConvertRecord[From, To]] = {
     import c.universe._
-    val fromType = c.weakTypeTag[From].tpe
-    val toType = c.weakTypeTag[To].tpe
-    new ConversionMacros[c.type](c).createFromRecord[From, To](
-      fromType, toType, q"${c.prefix.tree}.record")
+    new ConversionMacros[c.type](c).findConvertRecordCandidate[From, To]
+  }
+
+  def to_impl[From <: R: c.WeakTypeTag, To: c.WeakTypeTag](c: Context): c.Expr[To] = {
+    import c.universe._
+    val (fromTpe, toTpe) = (c.weakTypeTag[From].tpe, c.weakTypeTag[To].tpe)
+    val typeClass =
+      new ConversionMacros[c.type](c).convertRecordMaterializer(fromTpe, toTpe)
+
+    c.Expr[To](q"""$typeClass.convert(${c.prefix.tree}.record)""")
   }
 
   class ConversionMacros[C <: Context](override val c: C)
     extends RecordMacros[C](c) with Internal210 {
     import c.universe._
 
-    def recordToCaseClass[From <: R: c.WeakTypeTag, To <: Product: c.WeakTypeTag]: c.Expr[To] = {
-      import c.universe._
+    def findConvertRecordCandidate[From <: R: c.WeakTypeTag, To: c.WeakTypeTag]: c.Expr[ConvertRecord[From, To]] = {
+      val allImplicitCandidates = c.openImplicits
+        .map { case c.ImplicitCandidate(_, _, tp, tree) => tp.normalize }
 
-      val validImplicit = c.openImplicits.collectFirst {
-        case c.ImplicitCandidate(_, _, tp, _) =>
-          tp
-      }
+      val implicitCandidates = allImplicitCandidates.collect {
+        case TypeRef(_, _, _ :: toType :: Nil) => toType
+      }.filter(x => x.typeSymbol.isClass && x.typeSymbol.asClass.isCaseClass)
 
-      validImplicit match {
-        case None =>
-          c.abort(NoPosition, "The return type is not applicable to the record.")
-        case Some(tp) =>
-          val TypeRef(_, _, _ :: retType :: Nil) = tp.normalize
-          val fromType = weakTypeTag[From].tpe
-          val toType = retType.normalize
-          val conversionTree = createFromRecord[From, To](fromType, toType, Ident("arg"))
-          c.Expr(q"(((arg: ${TypeTree()}) => {$conversionTree}): $tp)")
+      implicitCandidates match {
+        case candidate :: Nil =>
+          c.Expr(new ConversionMacros[c.type](c).convertRecordMaterializer(weakTypeTag[From].tpe, candidate))
+        case l =>
+          c.abort(NoPosition, s"There are ${l.size} implicit candidates found. There should be only 1.")
       }
     }
 
-    def createFromRecord[From <: R: WeakTypeTag, To: WeakTypeTag](
-      fromType: Type, toType: Type, rec: Tree): c.Expr[To] = {
+    def convertRecordMaterializer(fromType: Type, toType: Type): Tree = {
       val toSym = toType.typeSymbol
 
       if (!toSym.asClass.isCaseClass) {
@@ -81,11 +85,14 @@ object RecordConversions {
         accessData(q"$tmpTerm", fname, ftpe)
       }
 
-      val resTree = q"""
-      val ${tmpTerm} = $rec
-      new $toType(..$args)"""
-
-      c.Expr(resTree)
+      q"""
+        new _root_.records.RecordConversions.ConvertRecord[$fromType, $toType] {
+          def convert(r: $fromType) = {
+            val ${tmpTerm} = r
+            new $toType(..$args)
+          }
+        }
+      """
     }
 
     def caseClassFields(ccType: Type) = {
