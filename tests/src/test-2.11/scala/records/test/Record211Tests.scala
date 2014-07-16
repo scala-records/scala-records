@@ -2,7 +2,7 @@ package records.test
 
 import org.scalatest._
 
-import records.R
+import records.Rec
 
 class Record211Tests extends FlatSpec with Matchers {
 
@@ -11,8 +11,8 @@ class Record211Tests extends FlatSpec with Matchers {
   "A Record" should "not depend on declared field order" in {
 
     val people = List(
-      R("age" -> 1, "name" -> "Michael"),
-      R("name" -> "Ahir", "age" -> 23))
+      Rec("age" -> 1, "name" -> "Michael"),
+      Rec("name" -> "Ahir", "age" -> 23))
 
     people.head.name should be ("Michael")
     people.last.name should be ("Ahir")
@@ -22,9 +22,9 @@ class Record211Tests extends FlatSpec with Matchers {
   it should "be able to convert to complex case classes" in {
 
     val data = List(
-      R("name" -> "Hans",  "age" -> 256, "location" -> "home"),
-      R("name" -> "Peter", "age" ->   1, "location" -> "bed"),
-      R("name" -> "Chuck", "age" ->   2, "location" -> "bar"))
+      Rec("name" -> "Hans",  "age" -> 256, "location" -> "home"),
+      Rec("name" -> "Peter", "age" ->   1, "location" -> "bed"),
+      Rec("name" -> "Chuck", "age" ->   2, "location" -> "bar"))
 
     val recs = data.map(_.to[DBRecord])
 
@@ -37,9 +37,9 @@ class Record211Tests extends FlatSpec with Matchers {
   it should "lub for records of different shapes" in {
 
     val data = List(
-      R("name" -> "Hans"),
-      R("name" -> "Peter", "age" ->   1),
-      R("name" -> "Chuck", "age" ->   2, "location" -> "bar"))
+      Rec("name" -> "Hans"),
+      Rec("name" -> "Peter", "age" ->   1),
+      Rec("name" -> "Chuck", "age" ->   2, "location" -> "bar"))
 
     val recs = data.map(_.name)
 
@@ -47,17 +47,17 @@ class Record211Tests extends FlatSpec with Matchers {
   }
 
   it should "lub different records in different contexts" in {
-    val x = List(R("age" -> 2, "name" -> "Heather"), R("age" -> 3, "name" -> "Tobias"))
+    val x = List(Rec("age" -> 2, "name" -> "Heather"), Rec("age" -> 3, "name" -> "Tobias"))
 
     x.head.age should be (2)
     x.last.age should be (3)
 
-    val r = if (true) R("age" -> 2, "name" -> "Tobias") else R("age" -> 1, "name" -> "Heather")
+    val r = if (true) Rec("age" -> 2, "name" -> "Tobias") else Rec("age" -> 1, "name" -> "Heather")
     r.age should be (2)
 
     val r1 = true match {
-      case true => R("age" -> 3, "name" -> "Hubert")
-      case false => R("age" -> 3, "name" -> "Hubert")
+      case true => Rec("age" -> 3, "name" -> "Hubert")
+      case false => Rec("age" -> 3, "name" -> "Hubert")
     }
     r1.age should be (3)
   }

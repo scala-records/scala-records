@@ -16,27 +16,27 @@ class ErrorTests extends FlatSpec with Matchers {
   import Typecheck._
 
   "A record" should "report an error on invalid field access" in {
-    val row = records.R("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
+    val row = records.Rec("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
 
     typedWithMsg("""row.lol""",
-      "value lol is not a member of records.R{def foo: Int; def bar: Double; def baz: Double}")
+      "value lol is not a member of records.Rec{def foo: Int; def bar: Double; def baz: Double}")
   }
 
   it should "report an error on duplicate fields" in {
-    typedWithMsg("""records.R("a" -> 1, "a" -> "Hello World")""", "Field a is defined more than once.")
-    typedWithMsg("""records.R("a" -> 1, "a" -> "Hello World", "b" -> 3, "b" -> 3.4)""",
+    typedWithMsg("""records.Rec("a" -> 1, "a" -> "Hello World")""", "Field a is defined more than once.")
+    typedWithMsg("""records.Rec("a" -> 1, "a" -> "Hello World", "b" -> 3, "b" -> 3.4)""",
       "Fields a, b are defined more than once.")
   }
 
   it should "report an error when non-literals are used" in {
     val x = 1
     val b = ("foo", 4)
-    typedWithMsg("""records.R("a" -> x, b)""",
+    typedWithMsg("""records.Rec("a" -> x, b)""",
       "Records can only be constructed with tuples (a, b) and arrows a -> b.")
   }
 
   "Record Conversions" should "report an error if conversion to non-case class is attempted" in {
-    val row = records.R("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
+    val row = records.Rec("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
 
     class A(foo: Int, bar: Double, baz: Double)
 
@@ -45,8 +45,8 @@ class ErrorTests extends FlatSpec with Matchers {
   }
 
   it should "report an error if fields are missing" in {
-    val row1 = records.R("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
-    val row2 = records.R()
+    val row1 = records.Rec("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
+    val row2 = records.Rec()
 
     case class A(foo: Int, bar: Double, baz: Double, msg: String)
 
@@ -59,7 +59,7 @@ class ErrorTests extends FlatSpec with Matchers {
   }
 
   it should "report an error if fields have bad type" in {
-    val row = records.R("foo" -> "Hello", "bar" -> 5)
+    val row = records.Rec("foo" -> "Hello", "bar" -> 5)
 
     case class A(foo: Int, bar: Int)
 
@@ -68,7 +68,7 @@ class ErrorTests extends FlatSpec with Matchers {
   }
 
   it should "report an error if conversion is attempted to multi-param-list case classes" in {
-    val row = records.R("x" -> 1, "y" -> 1)
+    val row = records.Rec("x" -> 1, "y" -> 1)
 
     case class A(x: Int, y: Int)(z: Int)
 
@@ -77,11 +77,11 @@ class ErrorTests extends FlatSpec with Matchers {
   }
 
   it should "report an error if we try to access incorrectly a nested record" in {
-    import records.R
-    val row = R("a" -> R("b" -> R("c" -> 1)))
+    import records.Rec
+    val row = Rec("a" -> Rec("b" -> Rec("c" -> 1)))
 
     typedWithMsg("row.a.c",
-      "value c is not a member of records.R{def b: records.R{def c: Int}}")
+      "value c is not a member of records.Rec{def b: records.Rec{def c: Int}}")
   }
 
 }

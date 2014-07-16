@@ -142,7 +142,7 @@ object Macros {
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
-        class Workaround extends _root_.records.R with ..$ancestors {
+        class Workaround extends _root_.records.Rec with ..$ancestors {
           ..$impl
           ..$macroFields
         }
@@ -151,7 +151,7 @@ object Macros {
       } else {
         q"""
         import scala.language.experimental.macros
-        new _root_.records.R with ..$ancestors {
+        new _root_.records.Rec with ..$ancestors {
           ..$impl
           ..$macroFields
         }
@@ -161,7 +161,7 @@ object Macros {
       resultTree
     }
 
-    def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[R] = {
+    def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec] = {
       val constantLiteralsMsg =
         "Records can only be constructed with constant keys (string literals)."
       val tuples = v.map(_.tree).map {
@@ -187,7 +187,7 @@ object Macros {
           q"private val _data = $data")(
             q"_data(fieldName).asInstanceOf[T]")
 
-      c.Expr[R](resultTree)
+      c.Expr[Rec](resultTree)
     }
 
     /** Generate a specialized data access on a record */
@@ -237,11 +237,11 @@ object Macros {
       }
     }
 
-    private lazy val rTpe: Type = implicitly[WeakTypeTag[R]].tpe
+    private lazy val rTpe: Type = implicitly[WeakTypeTag[Rec]].tpe
 
   }
 
-  def apply_impl(c: Context)(v: c.Expr[(String, Any)]*): c.Expr[R] =
+  def apply_impl(c: Context)(v: c.Expr[(String, Any)]*): c.Expr[Rec] =
     new RecordMacros[c.type](c).recordApply(v)
 
   def selectField_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {

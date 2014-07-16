@@ -5,11 +5,11 @@ import scala.tools.nsc.plugins._
 
 import scala.reflect.internal.Flags
 
-/** Tiny plugin to mark __data methods on records.R as synthetic */
+/** Tiny plugin to mark __data methods on records.Rec as synthetic */
 class SyntheticPlugin(val global: Global) extends Plugin {
 
   val name = "rsynth"
-  val description = "Mark __data methods on records.R as synthetic"
+  val description = "Mark __data methods on records.Rec as synthetic"
   val components: List[PluginComponent] = List(RSynthComponent)
 
   object RSynthComponent extends PluginComponent with transform.Transform {
@@ -26,7 +26,7 @@ class SyntheticPlugin(val global: Global) extends Plugin {
 
     class RSynthTransformer(unit: CompilationUnit) extends Transformer {
       private def needsSynthetic(sym: Symbol) =
-        sym.fullName.startsWith("records.R.__data")
+        sym.fullName.startsWith("records.Rec.__data")
 
       override def transform(tree: Tree): Tree = tree match {
         case dd: DefDef if needsSynthetic(dd.symbol) =>

@@ -9,12 +9,12 @@ This project is about designing a data type for database records. Currently it i
 1. Records must not be explicitly mentioned. In case of explicit mentioning the result will be a run-time exception. In `2.11.x` this would be detected by a warning. For example:
 
    ```
-   val rec: R{def x: Int} = R("x" -> 1)
-   rec.x // throws and exception
+   val rec: Rec{def x: Int} = Rec("x" -> 1)
+   rec.x // throws an exception
    ```
    + Fixing [SI-7340](https://issues.scala-lang.org/browse/SI-7340) would resolve this issue.
 
-2. Records will not work in IntelliJ IDEA. IntelliJ does not support whitebox macros.
+2. Records will display nicely in IntelliJ IDEA. IntelliJ does not support whitebox macros.
 
 ### For Scala 2.10.x
 
@@ -28,4 +28,5 @@ This project is about designing a data type for database records. Currently it i
 
    To disable this users must use an import `import scala.language.reflectiveCalls` or by setting the compiler option `-language:reflectiveCalls`.
 2. Least upper bounds (LUBs) of two records can not be found. Consequences are the following:
-   + If two queries return the same records the results can not be directly combined under a same type. For example, `List(R("a" -> 1), R("a" -> 2))` will not be usable.
+
+   + If two queries return the same records the results can not be directly combined under a same type. For example, `List(Rec("a" -> 1), Rec("a" -> 2))` will not be usable.
