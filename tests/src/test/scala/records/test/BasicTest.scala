@@ -150,4 +150,12 @@ class BasicTest extends FlatSpec with Matchers {
     val v: Int = x.a.b
   }
 
+  it should "provide toString" in {
+    class A { override def toString = "[A: my String]" }
+
+    val row = Rec("foo" -> "Hello World", "blah" -> 1, "a" -> new A)
+
+    row.toString should be("Rec { foo = Hello World, blah = 1, a = [A: my String] }")
+  }
+
 }

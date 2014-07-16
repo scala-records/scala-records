@@ -139,12 +139,30 @@ object Macros {
       val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
 
+      val toStringTree = {
+        val elems = for ((fname, tpe) <- schema) yield {
+          val fldVal = accessData(q"this", fname, tpe)
+          q"""$fname + " = " + $fldVal.toString"""
+        }
+
+        val cont = elems.reduceLeftOption[Tree] {
+          case (acc, e) => q"""$acc + ", " + $e"""
+        }
+
+        val str = cont.fold[Tree](q""""Rec {}"""") { cont =>
+          q""""Rec { " + $cont + " }""""
+        }
+
+        q"override def toString(): String = $str"
+      }
+
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
         class Workaround extends _root_.records.Rec with ..$ancestors {
           ..$impl
           ..$macroFields
+          $toStringTree
         }
         new Workaround()
         """
@@ -154,6 +172,7 @@ object Macros {
         new _root_.records.Rec with ..$ancestors {
           ..$impl
           ..$macroFields
+          $toStringTree
         }
         """
       }
