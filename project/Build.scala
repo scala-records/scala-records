@@ -6,7 +6,7 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 object BuildSettings {
   val paradiseVersion = "2.0.0"
   val buildSettings = Defaults.defaultSettings ++ SbtScalariform.scalariformSettings ++ Seq(
-    organization := "records",
+    organization := "ch.epfl.lamp",
     version := "0.1-SNAPSHOT",
     licenses := Seq("New BSD" -> url("https://raw2.github.com/vjovanov/refined-records/master/LICENSE")),
     scalacOptions ++= Seq("-deprecation", "-feature"),
@@ -68,24 +68,21 @@ object MyBuild extends Build {
   lazy val core = project
     .settings(macroBuildSettings: _*)
     .settings(
-      name := "Refined-Records Core",
+      name := "scala-records",
       autoCompilerPlugins := true)
     .dependsOn(synthPlugin % "plugin")
 
   lazy val tests = project
     .settings(macroBuildSettings: _*)
     .settings(
-      name := "Refined-Records Tests",
+      name := "scala-records-tests",
       unmanagedSourceDirectories in Test ++= {
-        if (scalaBinaryVersion.value == "2.11" ||
-            scalaVersion.value == "2.12.0-SNAPSHOTS")
+        if (scalaVersion.value >= "2.11")
           Seq(sourceDirectory.value / "test-2.11" / "scala")
         else
           Seq()
       }
     )
     .dependsOn(core)
-
-
 }
 
