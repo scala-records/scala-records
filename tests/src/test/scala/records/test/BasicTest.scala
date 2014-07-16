@@ -139,4 +139,15 @@ class BasicTest extends FlatSpec with Matchers {
     row.baz should be(1.7)
   }
 
+  it should "allow nested records" in {
+
+    val x = R("a" -> R("b" -> 1))
+
+    val y = R("a" -> R("b" -> R("c" -> 1)))
+
+    x.a.b should be(1)
+
+    val v: Int = x.a.b
+  }
+
 }

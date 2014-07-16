@@ -76,4 +76,12 @@ class ErrorTests extends FlatSpec with Matchers {
       "Target case class may only have a single parameter list.")
   }
 
+  it should "report an error if we try to access incorrectly a nested record" in {
+    import records.R
+    val row = R("a" -> R("b" -> R("c" -> 1)))
+
+    typedWithMsg("row.a.c",
+      "value c is not a member of records.R{def b: records.R{def c: Int}}")
+  }
+
 }

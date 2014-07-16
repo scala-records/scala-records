@@ -22,6 +22,7 @@ trait Internal210 { self =>
 
   implicit class RichSymbol(val sym: Symbol) {
     def info = sym.typeSignature
+    def overrides: List[Symbol] = sym.allOverriddenSymbols
   }
 
   implicit class RichContext(val c: self.c.type) {
@@ -34,6 +35,7 @@ trait Internal210 { self =>
     def typecheck(tree: c.universe.Tree): c.universe.Tree =
       c.typeCheck(tree)
 
+    def internal: c.universe.type = c.universe
   }
 
   implicit class RichMethodSymbol(val sym: MethodSymbol) {
