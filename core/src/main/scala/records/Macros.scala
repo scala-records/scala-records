@@ -147,6 +147,7 @@ object Macros {
           ..$impl
           ..$macroFields
           ${genToString(schema)}
+          ${genHashCode(schema)}
         }
         new Workaround()
         """
@@ -157,6 +158,7 @@ object Macros {
           ..$impl
           ..$macroFields
           ${genToString(schema)}
+          ${genHashCode(schema)}
         }
         """
       }
@@ -179,6 +181,28 @@ object Macros {
       }
 
       q"override def toString(): String = $str"
+    }
+
+    def genHashCode(schema: Schema): Tree = {
+
+      // Hash of all field names
+      val nameHash = schema.foldLeft(0) {
+        case (hash, (name, _)) =>
+          hash ^ name.hashCode
+      }
+
+      // Hashes of fields
+      val fieldHashes = schema.map {
+        case (name, tpe) =>
+          val data = accessData(q"this", name, tpe)
+          q"$data.##"
+      }
+
+      val hashBody = fieldHashes.foldLeft[Tree](q"$nameHash") {
+        case (acc, hash) => q"$acc ^ $hash"
+      }
+
+      q"override def hashCode(): Int = $hashBody"
     }
 
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec] = {

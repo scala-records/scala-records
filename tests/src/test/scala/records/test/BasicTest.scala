@@ -158,4 +158,13 @@ class BasicTest extends FlatSpec with Matchers {
     row.toString should be("Rec { foo = Hello World, blah = 1, a = [A: my String] }")
   }
 
+  it should "provide hashCode" in {
+    val a = Rec("a" -> 1, "b" -> "Hello World")
+    val b = Rec("a" -> 1.0, "b" -> "Hello World")
+    val c = Rec("a" -> 1, "b" -> "Hello Werld")
+
+    a.hashCode should be(b.hashCode)
+    a.hashCode should not be (c.hashCode)
+  }
+
 }
