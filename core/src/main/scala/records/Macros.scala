@@ -96,50 +96,13 @@ object Macros {
     }
 
     /**
-     * Generlalized record.
+     * Generalized record.
      * Implementation is totally left to the caller
      */
     def genRecord(schema: Schema, ancestors: Seq[Ident],
                   impl: Seq[Tree]): Tree = {
 
-      def enclClass(sym: Symbol): Symbol =
-        if (sym.isClass) sym
-        else enclClass(sym.owner)
-
-      def isValidAccessor(methSym: MethodSymbol): Boolean =
-        !methSym.isConstructor && methSym.isPublic && methSym.overrides.isEmpty
-
-      /**
-       * Create a tree for a 'def' of a field.
-       * If a type of the field is yet another record, it will be a class type of the $anon
-       * class (created as part of [[getRecord]]), rather than a pure RefinedType. Therefore
-       * we have to recreate it and provide an appropriate type to the macro call.
-       */
-      def fieldTree(i: Int, name: String, tpe: Type): Tree = {
-        val tpeOfField =
-          if (tpe.baseType(rTpe.typeSymbol) != NoType) { // tpe.isInstanceOf[R] will return false.
-            tpe.typeSymbol.typeSignature match {
-              case cls @ ClassInfoType(parents, decls: Scope, tsym) =>
-                // `cls` has in the scope declarations
-                // for constructor and overriden __data. We want to remove them from
-                // the scope of the RefinedType that we want to define.
-                val decls1: Scope =
-                  decls.filter {
-                    case meth: MethodSymbol => isValidAccessor(meth)
-                    case _                  => false
-                  }.asInstanceOf[Scope]
-                c.internal.refinedType(parents, enclClass(tpe.typeSymbol.owner), decls1, tpe.typeSymbol.pos)
-              case _ =>
-                tpe
-            }
-          } else tpe
-        q"""
-          def ${newTermName(name).encodedName.toTermName}: $tpeOfField =
-            macro _root_.records.Macros.selectField_impl[$tpeOfField]"""
-      }
-
-      val macroFields =
-        schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
+      val macroFields = schema.map((genRecordField _).tupled)
 
       val dataCountTree = q"$synthMod def __dataCount = ${schema.size}"
 
@@ -171,6 +134,50 @@ object Macros {
       resultTree
     }
 
+    /**
+     * Create a tree for a 'def' of a record field.
+     * If a type of the field is yet another record, it will be a class type of the $anon
+     * class (created as part of [[getRecord]]), rather than a pure RefinedType. Therefore
+     * we have to recreate it and provide an appropriate type to the macro call.
+     */
+    def genRecordField(name: String, tpe: Type): Tree = {
+      def enclClass(sym: Symbol): Symbol =
+        if (sym.isClass) sym
+        else enclClass(sym.owner)
+
+      def isValidAccessor(methSym: MethodSymbol): Boolean =
+        !methSym.isConstructor && methSym.isPublic && methSym.overrides.isEmpty
+
+      val tpeOfField =
+        if (tpe.baseType(rTpe.typeSymbol) != NoType) {
+          // tpe.isInstanceOf[Rec] will return false.
+          tpe.typeSymbol.typeSignature match {
+            case cls @ ClassInfoType(parents, decls: Scope, tsym) =>
+              // `cls` has in the scope declarations
+              // for constructor and overriden __data. We want to remove them from
+              // the scope of the RefinedType that we want to define.
+              val decls1: Scope =
+                decls.filter {
+                  case meth: MethodSymbol => isValidAccessor(meth)
+                  case _                  => false
+                }.asInstanceOf[Scope]
+              c.internal.refinedType(parents, enclClass(tpe.typeSymbol.owner),
+                decls1, tpe.typeSymbol.pos)
+            case _ =>
+              tpe
+          }
+        } else tpe
+      q"""
+        def ${newTermName(name).encodedName.toTermName}: $tpeOfField =
+          macro _root_.records.Macros.selectField_impl[$tpeOfField]
+      """
+    }
+
+    /**
+     * Generate the toString method of a record. The resulting toString
+     *  method will generate strings of the form:
+     *  Rec { fieldName1 = fieldValue1, fieldName2 = fieldValue2, ... }
+     */
     def genToString(schema: Schema): Tree = {
       val elems = for ((fname, tpe) <- schema) yield {
         val fldVal = accessData(q"this", fname, tpe)
@@ -188,6 +195,11 @@ object Macros {
       q"override def toString(): String = $str"
     }
 
+    /**
+     * Generate the hashCode method of a record. The hasCode is an bitwise xor
+     *  of the hashCodes of the field names (this one is calculated at compile
+     *  time) and the hashCodes of the field values
+     */
     def genHashCode(schema: Schema): Tree = {
 
       // Hash of all field names
@@ -230,6 +242,12 @@ object Macros {
       q"$synthMod def __dataAny(fieldName: String) = $lookupTree"
     }
 
+    /**
+     * Generate the equals method for Records. Two records are equal iff:
+     *  - They have the same number of fields
+     *  - Their fields have the same names
+     *  - Values of corresponding fields compare equal
+     */
     def genEquals(schema: Schema): Tree = {
       val thisCount = schema.size
 
