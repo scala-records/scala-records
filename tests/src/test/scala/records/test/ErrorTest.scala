@@ -84,4 +84,16 @@ class ErrorTests extends FlatSpec with Matchers {
       "value c is not a member of records.Rec{def b: records.Rec{def c: Int}}")
   }
 
+  it should "report an error when calling conversion method without type argument" in {
+    import records._
+    val record = Rec("field" -> "42")
+    case class FieldHolder(field: String)
+
+    typedWithMsg("record.to",
+      "Known limitation: Converting records requires an explicit type argument to `to` method representing the target case class")
+
+    typedWithMsg("val x: FieldHolder = record.to",
+      "Known limitation: Converting records requires an explicit type argument to `to` method representing the target case class")
+  }
+
 }
