@@ -12,6 +12,8 @@ object Macros {
   class RecordMacros[C <: Context](val c: C) extends Internal210 {
     import c.universe._
 
+    type Schema = Seq[(String, Type)]
+
     val rImplMods = Modifiers(Flag.OVERRIDE | Flag.SYNTHETIC)
 
     /**
@@ -30,8 +32,8 @@ object Macros {
      *    Should use the parameter [[fieldName]] of type String and
      *    return a value of a corresponding type.
      */
-    def record(schema: Seq[(String, Type)])(
-      ancestors: Ident*)(fields: Tree*)(dataImpl: Tree): Tree = {
+    def record(schema: Schema)(ancestors: Ident*)(
+      fields: Tree*)(dataImpl: Tree): Tree = {
 
       val dataDef = q"""
         $rImplMods def __data[T : _root_.scala.reflect.ClassTag](
@@ -60,9 +62,8 @@ object Macros {
      *    Should use the parameter [[fieldName]] of type String and
      *    return a value of a corresponding type.
      */
-    def spRecord(schema: Seq[(String, Type)])(
-      ancestors: Ident*)(fields: Tree*)(
-        dataImpl: PartialFunction[Type, Tree]): Tree = {
+    def spRecord(schema: Schema)(ancestors: Ident*)(fields: Tree*)(
+      dataImpl: PartialFunction[Type, Tree]): Tree = {
 
       import definitions._
 
@@ -97,7 +98,7 @@ object Macros {
      * Generlalized record.
      * Implementation is totally left to the caller
      */
-    def genRecord(schema: Seq[(String, Type)], ancestors: Seq[Ident],
+    def genRecord(schema: Schema, ancestors: Seq[Ident],
                   impl: Seq[Tree]): Tree = {
 
       def enclClass(sym: Symbol): Symbol =
@@ -139,30 +140,13 @@ object Macros {
       val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
 
-      val toStringTree = {
-        val elems = for ((fname, tpe) <- schema) yield {
-          val fldVal = accessData(q"this", fname, tpe)
-          q"""$fname + " = " + $fldVal.toString"""
-        }
-
-        val cont = elems.reduceLeftOption[Tree] {
-          case (acc, e) => q"""$acc + ", " + $e"""
-        }
-
-        val str = cont.fold[Tree](q""""Rec {}"""") { cont =>
-          q""""Rec { " + $cont + " }""""
-        }
-
-        q"override def toString(): String = $str"
-      }
-
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
         class Workaround extends _root_.records.Rec with ..$ancestors {
           ..$impl
           ..$macroFields
-          $toStringTree
+          ${genToString(schema)}
         }
         new Workaround()
         """
@@ -172,12 +156,29 @@ object Macros {
         new _root_.records.Rec with ..$ancestors {
           ..$impl
           ..$macroFields
-          $toStringTree
+          ${genToString(schema)}
         }
         """
       }
 
       resultTree
+    }
+
+    def genToString(schema: Schema): Tree = {
+      val elems = for ((fname, tpe) <- schema) yield {
+        val fldVal = accessData(q"this", fname, tpe)
+        q"""$fname + " = " + $fldVal.toString"""
+      }
+
+      val cont = elems.reduceLeftOption[Tree] {
+        case (acc, e) => q"""$acc + ", " + $e"""
+      }
+
+      val str = cont.fold[Tree](q""""Rec {}"""") { cont =>
+        q""""Rec { " + $cont + " }""""
+      }
+
+      q"override def toString(): String = $str"
     }
 
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec] = {
