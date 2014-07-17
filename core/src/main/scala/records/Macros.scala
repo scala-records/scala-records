@@ -17,6 +17,11 @@ object Macros {
     val rImplMods = Modifiers(Flag.OVERRIDE | Flag.SYNTHETIC)
     val synthMod = Modifiers(Flag.SYNTHETIC)
 
+    val specializedTypes = {
+      import definitions._
+      Set(BooleanTpe, ByteTpe, CharTpe, ShortTpe, IntTpe, LongTpe, FloatTpe, DoubleTpe)
+    }
+
     /**
      * Create a Record
      *
@@ -30,8 +35,8 @@ object Macros {
      * @param fields Additional members/fields of the resulting R
      *    (recommended for private data fields)
      * @param dataImpl Implementation of the [[__data]] method.
-     *    Should use the parameter [[fieldName]] of type String and
-     *    return a value of a corresponding type.
+     *    Should use the parameter [[fieldName]] of type String and the type
+     *    parameter [[T]] and return a value of type [[T]]
      */
     def record(schema: Schema)(ancestors: Ident*)(
       fields: Tree*)(dataImpl: Tree): Tree = {
@@ -56,43 +61,36 @@ object Macros {
      *    qualified.
      * @param fields Additional members/fields of the resulting R
      *    (recommended for private data fields)
+     * @param objectDataImpl Implementation of the [[__dataObj]] method. Should
+     *    use the parameter [[fieldName]] of type String and the type parameter
+     *    [[T]] and return a value of type [[T]]
      * @param dataImpl Partial function giving the implementations of
      *    the __data* methods. If it is not defined for some of the
-     *    __data* methods, {???} will be used instead. ObjectTpe is
-     *    passed in for the generic version.
+     *    __data* methods, {???} will be used instead.
      *    Should use the parameter [[fieldName]] of type String and
      *    return a value of a corresponding type.
+     *    The partial function will be called exactly once with each value in
+     *    [[specializedTypes]].
      */
-    def spRecord(schema: Schema)(ancestors: Ident*)(fields: Tree*)(
-      dataImpl: PartialFunction[Type, Tree]): Tree = {
+    def specializedRecord(schema: Schema)(ancestors: Ident*)(fields: Tree*)(
+      objectDataImpl: Tree)(dataImpl: PartialFunction[Type, Tree]): Tree = {
 
       import definitions._
 
-      def impl(tpe: Type) =
-        dataImpl.applyOrElse(tpe, (_: Type) => q"???")
+      def impl(tpe: Type) = dataImpl.applyOrElse(tpe, (_: Type) => q"???")
 
-      val dataDefs = q"""
-        $rImplMods def __dataBoolean(fieldName: String): Boolean =
-          ${impl(BooleanTpe)}
-        $rImplMods def __dataByte(fieldName: String): Byte =
-          ${impl(ByteTpe)}
-        $rImplMods def __dataShort(fieldName: String): Short =
-          ${impl(ShortTpe)}
-        $rImplMods def __dataChar(fieldName: String): Char =
-          ${impl(CharTpe)}
-        $rImplMods def __dataInt(fieldName: String): Int =
-          ${impl(IntTpe)}
-        $rImplMods def __dataLong(fieldName: String): Long =
-          ${impl(LongTpe)}
-        $rImplMods def __dataFloat(fieldName: String): Float =
-          ${impl(FloatTpe)}
-        $rImplMods def __dataDouble(fieldName: String): Double =
-          ${impl(DoubleTpe)}
-        $rImplMods def __dataObj[T : _root_.scala.reflect.ClassTag](fieldName: String): T =
-          ${impl(ObjectTpe)}
+      val specializedDefs = specializedTypes.map { t =>
+        val name = t.typeSymbol.name
+        val methodName = newTermName("__data" + name)
+        q"$rImplMods def $methodName(fieldName: String): $t = ${impl(t)}"
+      }
+
+      val objectDef = q"""
+        $rImplMods def __dataObj[T : _root_.scala.reflect.ClassTag](
+          fieldName: String): T = $objectDataImpl
       """
 
-      genRecord(schema, ancestors, fields :+ dataDefs)
+      genRecord(schema, ancestors, fields ++ specializedDefs :+ objectDef)
     }
 
     /**
