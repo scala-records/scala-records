@@ -4,6 +4,8 @@ import org.scalatest._
 
 import records.Rec
 
+import scala.collection.mutable
+
 class Record211Tests extends FlatSpec with Matchers {
 
   case class DBRecord(name: String, age: Int, location: String)
@@ -60,6 +62,21 @@ class Record211Tests extends FlatSpec with Matchers {
       case false => Rec("age" -> 3, "name" -> "Hubert")
     }
     r1.age should be (3)
+  }
+
+  it should "work in implicitly typed sets" in {
+
+    val set = mutable.Set(Rec("a" -> 1, "b" -> 2))
+
+    set += Rec("a" -> 2, "b" -> 3)
+    set += Rec("a" -> 5, "b" -> 3)
+
+    assert(set.contains(Rec("a" -> 1, "b" -> 2)))
+    assert(set.contains(Rec("a" -> 2, "b" -> 3)))
+    assert(set.contains(Rec("a" -> 5, "b" -> 3)))
+
+    assert(!set.contains(Rec("a" -> 7, "b" -> 9)))
+    assert(!set.contains(Rec("a" -> 7, "b" -> 10)))
   }
 
 }
