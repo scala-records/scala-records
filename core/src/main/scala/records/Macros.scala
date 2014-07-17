@@ -14,10 +14,11 @@ object Macros {
 
     type Schema = Seq[(String, Type)]
 
-    val rImplMods = Modifiers(Flag.OVERRIDE | Flag.SYNTHETIC)
-    val synthMod = Modifiers(Flag.SYNTHETIC)
+    protected val rImplMods = Modifiers(Flag.OVERRIDE | Flag.SYNTHETIC)
+    protected val synthMod = Modifiers(Flag.SYNTHETIC)
 
-    val specializedTypes = {
+    /** Set of types for which the `_\u200B_data*` members are specialized */
+    val specializedTypes: Set[Type] = {
       import definitions._
       Set(BooleanTpe, ByteTpe, CharTpe, ShortTpe, IntTpe, LongTpe, FloatTpe, DoubleTpe)
     }
@@ -25,18 +26,18 @@ object Macros {
     /**
      * Create a Record
      *
-     * This creates a simple record that implements __data. As a
+     * This creates a simple record that implements `_\u200B_data`. As a
      * consequence it needs to box when used with primitive types.
      *
      * @param schema List of (field name, field type) tuples
-     * @param ancestors Traits that are mixed into the resulting R
-     *    (e.g. Serializable). Make sure the idents are fully
-     *    qualified.
-     * @param fields Additional members/fields of the resulting R
+     * @param ancestors Traits that are mixed into the resulting [[Rec]]
+     *    (e.g. Serializable). Make sure the idents are fully qualified.
+     * @param fields Additional members/fields of the resulting [[Rec]]
      *    (recommended for private data fields)
-     * @param dataImpl Implementation of the [[__data]] method.
+     * @param dataImpl Implementation of the `_\u200B_data` method.
      *    Should use the parameter [[fieldName]] of type String and the type
      *    parameter [[T]] and return a value of type [[T]]
+     *    return a value of a corresponding type.
      */
     def record(schema: Schema)(ancestors: Ident*)(
       fields: Tree*)(dataImpl: Tree): Tree = {
@@ -56,17 +57,16 @@ object Macros {
      * boxing can be avoided.
      *
      * @param schema List of (field name, field type) tuples
-     * @param ancestors Traits that are mixed into the resulting R
-     *    (e.g. Serializable). Make sure the idents are fully
-     *    qualified.
-     * @param fields Additional members/fields of the resulting R
+     * @param ancestors Traits that are mixed into the resulting [[Rec]]
+     *    (e.g. Serializable). Make sure the idents are fully qualified.
+     * @param fields Additional members/fields of the resulting [[Rec]]
      *    (recommended for private data fields)
      * @param objectDataImpl Implementation of the [[__dataObj]] method. Should
      *    use the parameter [[fieldName]] of type String and the type parameter
      *    [[T]] and return a value of type [[T]]
      * @param dataImpl Partial function giving the implementations of
-     *    the __data* methods. If it is not defined for some of the
-     *    __data* methods, {???} will be used instead.
+     *    the `_\u200B_data*` methods. If it is not defined for some of the
+     *    `_\u200B_data*` methods, `???` will be used instead.
      *    Should use the parameter [[fieldName]] of type String and
      *    return a value of a corresponding type.
      *    The partial function will be called exactly once with each value in
@@ -94,8 +94,11 @@ object Macros {
     }
 
     /**
-     * Generalized record.
-     * Implementation is totally left to the caller
+     * Generalized record. Implementation is totally left to the caller.
+     * @param schema List of (field name, field type) tuples
+     * @param ancestors Traits that are mixed into the resulting [[Rec]]
+     *    (e.g. Serializable). Make sure the idents are fully qualified.
+     * @param impl However you want to implement the `_\u200B_data` interface.
      */
     def genRecord(schema: Schema, ancestors: Seq[Ident],
                   impl: Seq[Tree]): Tree = {
@@ -174,7 +177,9 @@ object Macros {
     /**
      * Generate the toString method of a record. The resulting toString
      *  method will generate strings of the form:
+     *  {{{
      *  Rec { fieldName1 = fieldValue1, fieldName2 = fieldValue2, ... }
+     *  }}}
      */
     def genToString(schema: Schema): Tree = {
       val elems = for ((fname, tpe) <- schema) yield {
@@ -220,7 +225,7 @@ object Macros {
       q"override def hashCode(): Int = $hashBody"
     }
 
-    /** Generate __dataExists member */
+    /** Generate `_\u200B_dataExists` member */
     def genDataExists(schema: Schema): Tree = {
       val lookupData = schema.map { case (name, _) => (name, q"true") }.toMap
       val lookupTree =
@@ -229,7 +234,7 @@ object Macros {
       q"$synthMod def __dataExists(fieldName: String) = $lookupTree"
     }
 
-    /** Generate __dataAny member */
+    /** Generate `_\u200B_dataAny` member */
     def genDataAny(schema: Schema): Tree = {
       val lookupData = schema.map {
         case (name, tpe) =>
@@ -289,6 +294,7 @@ object Macros {
       q"$nameTree match { case ..$cases1 }"
     }
 
+    /** Macro that implements [[Rec.apply]]. You probably won't need this. */
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec] = {
       val constantLiteralsMsg =
         "Records can only be constructed with constant keys (string literals)."
