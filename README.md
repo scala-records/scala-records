@@ -16,6 +16,10 @@ This project is about designing a data type for database records. Currently it i
 
 2. Records will display nicely in IntelliJ IDEA. IntelliJ does not support whitebox macros.
 
+3. In the Eclipse debugger records can not be debugged when conversions to case classes are used. For this to work the IDE must to understand the behavior of implicit macors.
+
+4. In the Eclipse debugger records display as their underlying data structures. If these structures are optimised it is hard to keep track of the fields. 
+
 ### For Scala 2.10.x
 
 1. All record calls will fire a warning for a reflective macro call.
