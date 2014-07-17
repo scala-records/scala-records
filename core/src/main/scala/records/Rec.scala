@@ -29,6 +29,9 @@ object Rec {
  * possible to avoid boxing.
  */
 trait Rec {
+  def __dataCount: Int
+  def __dataExists(fieldName: String): Boolean
+  def __dataAny(fieldName: String): Any
   @inline def __data[T: ClassTag](fieldName: String): T = {
     val res = classTag[T] match {
       case ClassTag.Boolean => __dataBoolean(fieldName)

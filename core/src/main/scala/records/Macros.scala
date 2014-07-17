@@ -12,7 +12,10 @@ object Macros {
   class RecordMacros[C <: Context](val c: C) extends Internal210 {
     import c.universe._
 
+    type Schema = Seq[(String, Type)]
+
     val rImplMods = Modifiers(Flag.OVERRIDE | Flag.SYNTHETIC)
+    val synthMod = Modifiers(Flag.SYNTHETIC)
 
     /**
      * Create a Record
@@ -30,8 +33,8 @@ object Macros {
      *    Should use the parameter [[fieldName]] of type String and
      *    return a value of a corresponding type.
      */
-    def record(schema: Seq[(String, Type)])(
-      ancestors: Ident*)(fields: Tree*)(dataImpl: Tree): Tree = {
+    def record(schema: Schema)(ancestors: Ident*)(
+      fields: Tree*)(dataImpl: Tree): Tree = {
 
       val dataDef = q"""
         $rImplMods def __data[T : _root_.scala.reflect.ClassTag](
@@ -60,9 +63,8 @@ object Macros {
      *    Should use the parameter [[fieldName]] of type String and
      *    return a value of a corresponding type.
      */
-    def spRecord(schema: Seq[(String, Type)])(
-      ancestors: Ident*)(fields: Tree*)(
-        dataImpl: PartialFunction[Type, Tree]): Tree = {
+    def spRecord(schema: Schema)(ancestors: Ident*)(fields: Tree*)(
+      dataImpl: PartialFunction[Type, Tree]): Tree = {
 
       import definitions._
 
@@ -94,75 +96,29 @@ object Macros {
     }
 
     /**
-     * Generlalized record.
+     * Generalized record.
      * Implementation is totally left to the caller
      */
-    def genRecord(schema: Seq[(String, Type)], ancestors: Seq[Ident],
+    def genRecord(schema: Schema, ancestors: Seq[Ident],
                   impl: Seq[Tree]): Tree = {
 
-      def enclClass(sym: Symbol): Symbol =
-        if (sym.isClass) sym
-        else enclClass(sym.owner)
+      val macroFields = schema.map((genRecordField _).tupled)
 
-      def isValidAccessor(methSym: MethodSymbol): Boolean =
-        !methSym.isConstructor && methSym.isPublic && methSym.overrides.isEmpty
+      val dataCountTree = q"$synthMod def __dataCount = ${schema.size}"
 
-      /**
-       * Create a tree for a 'def' of a field.
-       * If a type of the field is yet another record, it will be a class type of the $anon
-       * class (created as part of [[getRecord]]), rather than a pure RefinedType. Therefore
-       * we have to recreate it and provide an appropriate type to the macro call.
-       */
-      def fieldTree(i: Int, name: String, tpe: Type): Tree = {
-        val tpeOfField =
-          if (tpe.baseType(rTpe.typeSymbol) != NoType) { // tpe.isInstanceOf[R] will return false.
-            tpe.typeSymbol.typeSignature match {
-              case cls @ ClassInfoType(parents, decls: Scope, tsym) =>
-                // `cls` has in the scope declarations
-                // for constructor and overriden __data. We want to remove them from
-                // the scope of the RefinedType that we want to define.
-                val decls1: Scope =
-                  decls.filter {
-                    case meth: MethodSymbol => isValidAccessor(meth)
-                    case _                  => false
-                  }.asInstanceOf[Scope]
-                c.internal.refinedType(parents, enclClass(tpe.typeSymbol.owner), decls1, tpe.typeSymbol.pos)
-              case _ =>
-                tpe
-            }
-          } else tpe
-        q"""
-          def ${newTermName(name).encodedName.toTermName}: $tpeOfField =
-            macro _root_.records.Macros.selectField_impl[$tpeOfField]"""
-      }
-
-      val macroFields =
-        schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
-
-      val toStringTree = {
-        val elems = for ((fname, tpe) <- schema) yield {
-          val fldVal = accessData(q"this", fname, tpe)
-          q"""$fname + " = " + $fldVal.toString"""
-        }
-
-        val cont = elems.reduceLeftOption[Tree] {
-          case (acc, e) => q"""$acc + ", " + $e"""
-        }
-
-        val str = cont.fold[Tree](q""""Rec {}"""") { cont =>
-          q""""Rec { " + $cont + " }""""
-        }
-
-        q"override def toString(): String = $str"
-      }
+      val body = impl ++ macroFields ++ Seq(
+        genToString(schema),
+        genHashCode(schema),
+        genDataExists(schema),
+        genDataAny(schema),
+        genEquals(schema),
+        dataCountTree)
 
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
         class Workaround extends _root_.records.Rec with ..$ancestors {
-          ..$impl
-          ..$macroFields
-          $toStringTree
+          ..$body
         }
         new Workaround()
         """
@@ -170,14 +126,169 @@ object Macros {
         q"""
         import scala.language.experimental.macros
         new _root_.records.Rec with ..$ancestors {
-          ..$impl
-          ..$macroFields
-          $toStringTree
+          ..$body
         }
         """
       }
 
       resultTree
+    }
+
+    /**
+     * Create a tree for a 'def' of a record field.
+     * If a type of the field is yet another record, it will be a class type of the $anon
+     * class (created as part of [[getRecord]]), rather than a pure RefinedType. Therefore
+     * we have to recreate it and provide an appropriate type to the macro call.
+     */
+    def genRecordField(name: String, tpe: Type): Tree = {
+      def enclClass(sym: Symbol): Symbol =
+        if (sym.isClass) sym
+        else enclClass(sym.owner)
+
+      def isValidAccessor(methSym: MethodSymbol): Boolean =
+        !methSym.isConstructor && methSym.isPublic && methSym.overrides.isEmpty
+
+      val tpeOfField =
+        if (tpe.baseType(rTpe.typeSymbol) != NoType) {
+          // tpe.isInstanceOf[Rec] will return false.
+          tpe.typeSymbol.typeSignature match {
+            case cls @ ClassInfoType(parents, decls: Scope, tsym) =>
+              // `cls` has in the scope declarations
+              // for constructor and overriden __data. We want to remove them from
+              // the scope of the RefinedType that we want to define.
+              val decls1: Scope =
+                decls.filter {
+                  case meth: MethodSymbol => isValidAccessor(meth)
+                  case _                  => false
+                }.asInstanceOf[Scope]
+              c.internal.refinedType(parents, enclClass(tpe.typeSymbol.owner),
+                decls1, tpe.typeSymbol.pos)
+            case _ =>
+              tpe
+          }
+        } else tpe
+      q"""
+        def ${newTermName(name).encodedName.toTermName}: $tpeOfField =
+          macro _root_.records.Macros.selectField_impl[$tpeOfField]
+      """
+    }
+
+    /**
+     * Generate the toString method of a record. The resulting toString
+     *  method will generate strings of the form:
+     *  Rec { fieldName1 = fieldValue1, fieldName2 = fieldValue2, ... }
+     */
+    def genToString(schema: Schema): Tree = {
+      val elems = for ((fname, tpe) <- schema) yield {
+        val fldVal = accessData(q"this", fname, tpe)
+        q"""$fname + " = " + $fldVal.toString"""
+      }
+
+      val cont = elems.reduceLeftOption[Tree] {
+        case (acc, e) => q"""$acc + ", " + $e"""
+      }
+
+      val str = cont.fold[Tree](q""""Rec {}"""") { cont =>
+        q""""Rec { " + $cont + " }""""
+      }
+
+      q"override def toString(): String = $str"
+    }
+
+    /**
+     * Generate the hashCode method of a record. The hasCode is an bitwise xor
+     *  of the hashCodes of the field names (this one is calculated at compile
+     *  time) and the hashCodes of the field values
+     */
+    def genHashCode(schema: Schema): Tree = {
+
+      // Hash of all field names
+      val nameHash = schema.foldLeft(0) {
+        case (hash, (name, _)) =>
+          hash ^ name.hashCode
+      }
+
+      // Hashes of fields
+      val fieldHashes = schema.map {
+        case (name, tpe) =>
+          val data = accessData(q"this", name, tpe)
+          q"$data.##"
+      }
+
+      val hashBody = fieldHashes.foldLeft[Tree](q"$nameHash") {
+        case (acc, hash) => q"$acc ^ $hash"
+      }
+
+      q"override def hashCode(): Int = $hashBody"
+    }
+
+    /** Generate __dataExists member */
+    def genDataExists(schema: Schema): Tree = {
+      val lookupData = schema.map { case (name, _) => (name, q"true") }.toMap
+      val lookupTree =
+        genLookup(q"fieldName", lookupData, default = Some(q"false"))
+
+      q"$synthMod def __dataExists(fieldName: String) = $lookupTree"
+    }
+
+    /** Generate __dataAny member */
+    def genDataAny(schema: Schema): Tree = {
+      val lookupData = schema.map {
+        case (name, tpe) =>
+          (name, accessData(q"this", name, tpe))
+      }.toMap
+      val lookupTree = genLookup(q"fieldName", lookupData, mayCache = false)
+
+      q"$synthMod def __dataAny(fieldName: String) = $lookupTree"
+    }
+
+    /**
+     * Generate the equals method for Records. Two records are equal iff:
+     *  - They have the same number of fields
+     *  - Their fields have the same names
+     *  - Values of corresponding fields compare equal
+     */
+    def genEquals(schema: Schema): Tree = {
+      val thisCount = schema.size
+
+      val existence = schema.map { case (n, _) => q"that.__dataExists($n)" }
+      val equality = schema.map {
+        case (name, tpe) =>
+          q"${accessData(q"this", name, tpe)} == that.__dataAny($name)"
+      }
+
+      val tests = existence ++ equality
+
+      q"""
+      override def equals(that: Any) = that match {
+        case that: _root_.records.Rec if that.__dataCount == $thisCount =>
+          ${tests.fold[Tree](q"true") { case (x, y) => q"$x && $y" }}
+        case _ => false
+      }
+      """
+    }
+
+    /**
+     * Generate a lookup amongst the keys in [[data]] and map to the tree
+     *  values. This is like an exhaustive pattern match on the strings, but may
+     *  be implemented more efficiently.
+     *  If default is None, it is assumed that [[nameTree]] evaluates to one of
+     *  the keys of [[data]]. Otherwise the default tree is used if a key
+     *  doesn't exist.
+     *  If [[mayCache]] is true, the implementation might decide to store the
+     *  evaluated trees somewhere (at runtime). Otherwise, the trees will be
+     *  evaluated each time the resulting tree is evaluated.
+     */
+    def genLookup(nameTree: Tree, data: Map[String, Tree],
+                  default: Option[Tree] = None, mayCache: Boolean = true): Tree = {
+
+      val cases0 = data.map {
+        case (name, res) => cq"$name => $res"
+      }
+
+      val cases1 = cases0 ++ default.map(default => cq"_ => $default")
+
+      q"$nameTree match { case ..$cases1 }"
     }
 
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec] = {
