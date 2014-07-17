@@ -7,7 +7,7 @@ import records.Rec
 /*
  * Purpose of this file is to see how records behave in the IDE.
  */
-final private class EclipseTest {
+object EclipseTest extends App {
 
   case class ObjectVal(myObject: AnyRef)
   case class DBRecord(name: String, age: Int, location: String)
