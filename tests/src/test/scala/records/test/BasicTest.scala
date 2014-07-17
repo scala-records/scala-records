@@ -167,4 +167,50 @@ class BasicTest extends FlatSpec with Matchers {
     a.hashCode should not be (c.hashCode)
   }
 
+  it should "provide __dataCount" in {
+    val a = Rec()
+    val b = Rec("a" -> 1)
+    val c = Rec("c" -> 2, "d" -> 3, "e" -> 5)
+
+    a.__dataCount should be(0)
+    b.__dataCount should be(1)
+    c.__dataCount should be(3)
+  }
+
+  it should "provide __dataAny" in {
+    val a = Rec("c" -> 2, "d" -> 3, "e" -> "bar")
+
+    a.__dataAny("c") should be(2)
+    a.__dataAny("d") should be(3)
+    a.__dataAny("e") should be("bar")
+  }
+
+  it should "provide __dataExists" in {
+    val a = Rec("a" -> 4, "Hello World" -> "foo")
+
+    a.__dataExists("a") should be(true)
+    a.__dataExists("Hello World") should be(true)
+    a.__dataExists("bar") should be(false)
+  }
+
+  it should "provide equals" in {
+    val a = Rec("a" -> 1, "b" -> "Hello World")
+    val b = Rec("a" -> 1.0, "b" -> "Hello World")
+    val c = Rec("a" -> 1, "b" -> "Hello Werld")
+
+    a should be(b)
+    a should not be (c)
+    b should not be (c)
+  }
+
+  it should "provide equals for nested records" in {
+
+    val a = Rec("a" -> 1, "b" -> Rec("a" -> "foo", "bar" -> "bar"))
+    val b = Rec("b" -> Rec("a" -> "foo", "bar" -> "bar"), "a" -> 1)
+    val c = Rec("b" -> Rec("a" -> "foo2", "bar" -> "bar"), "a" -> 1)
+
+    a should be(b)
+    a should not be (c)
+    b should not be (c)
+  }
 }

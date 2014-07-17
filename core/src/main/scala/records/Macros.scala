@@ -15,6 +15,7 @@ object Macros {
     type Schema = Seq[(String, Type)]
 
     val rImplMods = Modifiers(Flag.OVERRIDE | Flag.SYNTHETIC)
+    val synthMod = Modifiers(Flag.SYNTHETIC)
 
     /**
      * Create a Record
@@ -140,14 +141,21 @@ object Macros {
       val macroFields =
         schema.zipWithIndex.map { case ((n, s), i) => fieldTree(i, n, s) }
 
+      val dataCountTree = q"$synthMod def __dataCount = ${schema.size}"
+
+      val body = impl ++ macroFields ++ Seq(
+        genToString(schema),
+        genHashCode(schema),
+        genDataExists(schema),
+        genDataAny(schema),
+        genEquals(schema),
+        dataCountTree)
+
       val resultTree = if (CompatInfo.isScala210) {
         q"""
         import scala.language.experimental.macros
         class Workaround extends _root_.records.Rec with ..$ancestors {
-          ..$impl
-          ..$macroFields
-          ${genToString(schema)}
-          ${genHashCode(schema)}
+          ..$body
         }
         new Workaround()
         """
@@ -155,10 +163,7 @@ object Macros {
         q"""
         import scala.language.experimental.macros
         new _root_.records.Rec with ..$ancestors {
-          ..$impl
-          ..$macroFields
-          ${genToString(schema)}
-          ${genHashCode(schema)}
+          ..$body
         }
         """
       }
@@ -203,6 +208,69 @@ object Macros {
       }
 
       q"override def hashCode(): Int = $hashBody"
+    }
+
+    /** Generate __dataExists member */
+    def genDataExists(schema: Schema): Tree = {
+      val lookupData = schema.map { case (name, _) => (name, q"true") }.toMap
+      val lookupTree =
+        genLookup(q"fieldName", lookupData, default = Some(q"false"))
+
+      q"$synthMod def __dataExists(fieldName: String) = $lookupTree"
+    }
+
+    /** Generate __dataAny member */
+    def genDataAny(schema: Schema): Tree = {
+      val lookupData = schema.map {
+        case (name, tpe) =>
+          (name, accessData(q"this", name, tpe))
+      }.toMap
+      val lookupTree = genLookup(q"fieldName", lookupData, mayCache = false)
+
+      q"$synthMod def __dataAny(fieldName: String) = $lookupTree"
+    }
+
+    def genEquals(schema: Schema): Tree = {
+      val thisCount = schema.size
+
+      val existence = schema.map { case (n, _) => q"that.__dataExists($n)" }
+      val equality = schema.map {
+        case (name, tpe) =>
+          q"${accessData(q"this", name, tpe)} == that.__dataAny($name)"
+      }
+
+      val tests = existence ++ equality
+
+      q"""
+      override def equals(that: Any) = that match {
+        case that: _root_.records.Rec if that.__dataCount == $thisCount =>
+          ${tests.fold[Tree](q"true") { case (x, y) => q"$x && $y" }}
+        case _ => false
+      }
+      """
+    }
+
+    /**
+     * Generate a lookup amongst the keys in [[data]] and map to the tree
+     *  values. This is like an exhaustive pattern match on the strings, but may
+     *  be implemented more efficiently.
+     *  If default is None, it is assumed that [[nameTree]] evaluates to one of
+     *  the keys of [[data]]. Otherwise the default tree is used if a key
+     *  doesn't exist.
+     *  If [[mayCache]] is true, the implementation might decide to store the
+     *  evaluated trees somewhere (at runtime). Otherwise, the trees will be
+     *  evaluated each time the resulting tree is evaluated.
+     */
+    def genLookup(nameTree: Tree, data: Map[String, Tree],
+                  default: Option[Tree] = None, mayCache: Boolean = true): Tree = {
+
+      val cases0 = data.map {
+        case (name, res) => cq"$name => $res"
+      }
+
+      val cases1 = cases0 ++ default.map(default => cq"_ => $default")
+
+      q"$nameTree match { case ..$cases1 }"
     }
 
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec] = {
