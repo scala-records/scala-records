@@ -6,7 +6,7 @@ import scala.reflect._
 import RecordConversions._
 
 object Rec {
-  /** Create a "literal record" with field value pairs [[v]]. */
+  /** Create a "literal record" with field value pairs `v`. */
   def apply(v: (String, Any)*): Rec = macro records.Macros.apply_impl
 
   /**
