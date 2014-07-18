@@ -35,8 +35,8 @@ object Macros {
      * @param fields Additional members/fields of the resulting [[Rec]]
      *    (recommended for private data fields)
      * @param dataImpl Implementation of the `_\u200B_data` method.
-     *    Should use the parameter [[fieldName]] of type String and the type
-     *    parameter [[T]] and return a value of type [[T]]
+     *    Should use the parameter `fieldName` of type String and the type
+     *    parameter `T` and return a value of type `T`
      *    return a value of a corresponding type.
      */
     def record(schema: Schema)(ancestors: Ident*)(
@@ -61,13 +61,13 @@ object Macros {
      *    (e.g. Serializable). Make sure the idents are fully qualified.
      * @param fields Additional members/fields of the resulting [[Rec]]
      *    (recommended for private data fields)
-     * @param objectDataImpl Implementation of the [[__dataObj]] method. Should
-     *    use the parameter [[fieldName]] of type String and the type parameter
-     *    [[T]] and return a value of type [[T]]
+     * @param objectDataImpl Implementation of the `_\u200B_dataObj` method. Should
+     *    use the parameter `fieldName` of type String and the type parameter
+     *    `T` and return a value of type `T`
      * @param dataImpl Partial function giving the implementations of
      *    the `_\u200B_data*` methods. If it is not defined for some of the
      *    `_\u200B_data*` methods, `???` will be used instead.
-     *    Should use the parameter [[fieldName]] of type String and
+     *    Should use the parameter `fieldName` of type String and
      *    return a value of a corresponding type.
      *    The partial function will be called exactly once with each value in
      *    [[specializedTypes]].
@@ -137,8 +137,8 @@ object Macros {
 
     /**
      * Create a tree for a 'def' of a record field.
-     * If a type of the field is yet another record, it will be a class type of the $anon
-     * class (created as part of [[getRecord]]), rather than a pure RefinedType. Therefore
+     * If a type of the field is yet another record, it will be a class type of the $\u200Banon
+     * class (created as part of [[genRecord]]), rather than a pure RefinedType. Therefore
      * we have to recreate it and provide an appropriate type to the macro call.
      */
     def genRecordField(name: String, tpe: Type): Tree = {
@@ -272,13 +272,13 @@ object Macros {
     }
 
     /**
-     * Generate a lookup amongst the keys in [[data]] and map to the tree
+     *  Generate a lookup amongst the keys in `data` and map to the tree
      *  values. This is like an exhaustive pattern match on the strings, but may
      *  be implemented more efficiently.
-     *  If default is None, it is assumed that [[nameTree]] evaluates to one of
-     *  the keys of [[data]]. Otherwise the default tree is used if a key
+     *  If default is None, it is assumed that `nameTree` evaluates to one of
+     *  the keys of `data`. Otherwise the default tree is used if a key
      *  doesn't exist.
-     *  If [[mayCache]] is true, the implementation might decide to store the
+     *  If `mayCache` is true, the implementation might decide to store the
      *  evaluated trees somewhere (at runtime). Otherwise, the trees will be
      *  evaluated each time the resulting tree is evaluated.
      */
