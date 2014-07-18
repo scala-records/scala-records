@@ -6,14 +6,22 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 object BuildSettings {
   val paradiseVersion = "2.0.0"
   val buildSettings = Defaults.defaultSettings ++ SbtScalariform.scalariformSettings ++ Seq(
-    organization := "ch.epfl.lamp",
+
+    // Metadata
     version := "0.1-SNAPSHOT",
-    licenses := Seq("New BSD" -> url("https://raw2.github.com/vjovanov/refined-records/master/LICENSE")),
-    scalacOptions ++= Seq("-deprecation", "-feature"),
+    organization := "ch.epfl.lamp",
+    licenses := Seq("New BSD" -> url("https://raw2.github.com/scala-records/scala-records/master/LICENSE")),
+    homepage := Some(url("https://github.com/scala-records/scala-records/")),
     organizationHomepage := Some(url("http://lamp.epfl.ch")),
+    scmInfo := Some(ScmInfo(
+      url("https://github.com/scala-records/scala-records.git"),
+      "git://github.com/scala-records/scala-records.git")),
+
+    // Actual settings
+    scalacOptions ++= Seq("-deprecation", "-feature"),
     autoAPIMappings := true,
     scalaVersion := "2.11.1",
-    scmInfo := Some(ScmInfo(url("https://github.com/vjovanov/refined-records.git"),"git://github.com/vjovanov/refined-records.git")),
+
     crossScalaVersions := Seq(
       "2.10.2", "2.10.3", "2.10.4",
       "2.11.0", "2.11.1",
@@ -27,6 +35,18 @@ object BuildSettings {
     },
     ScalariformKeys.preferences in Compile := formattingPreferences,
     ScalariformKeys.preferences in Test    := formattingPreferences
+  )
+
+  val publishSettings = Seq(
+    publishMavenStyle := true,
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    },
+    publishArtifact in Test := false // just to be safe
   )
 
   val macroBuildSettings = buildSettings ++ Seq(
@@ -67,6 +87,7 @@ object MyBuild extends Build {
 
   lazy val core = project
     .settings(macroBuildSettings: _*)
+    .settings(publishSettings: _*)
     .settings(
       name := "scala-records",
       autoCompilerPlugins := true)
