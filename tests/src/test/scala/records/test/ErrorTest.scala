@@ -23,7 +23,8 @@ class ErrorTests extends FlatSpec with Matchers {
   }
 
   it should "report an error on duplicate fields" in {
-    typedWithMsg("""records.Rec("a" -> 1, "a" -> "Hello World")""", "Field a is defined more than once.")
+    typedWithMsg("""records.Rec("a" -> 1, "a" -> "Hello World")""",
+      "Field a is defined more than once.")
     typedWithMsg("""records.Rec("a" -> 1, "a" -> "Hello World", "b" -> 3, "b" -> 3.4)""",
       "Fields a, b are defined more than once.")
   }
@@ -52,10 +53,10 @@ class ErrorTests extends FlatSpec with Matchers {
 
     typedWithMsg("row1.to[A]",
       "Converting to A would require the source record to have the " +
-        "following additional fields: [msg].")
+        "following additional fields: [msg: String].")
     typedWithMsg("row2.to[A]",
       "Converting to A would require the source record to have the " +
-        "following additional fields: [foo, bar, baz, msg].")
+        "following additional fields: [foo: Int, bar: Double, baz: Double, msg: String].")
   }
 
   it should "report an error if fields have bad type" in {
@@ -64,7 +65,7 @@ class ErrorTests extends FlatSpec with Matchers {
     case class A(foo: Int, bar: Int)
 
     typedWithMsg("row.to[A]",
-      "Type of field foo of source record (String) doesn't conform the expected type (Int).")
+      "Type of field foo: String of source record doesn't conform the expected type (Int).")
   }
 
   it should "report an error if conversion is attempted to multi-param-list case classes" in {
@@ -96,4 +97,36 @@ class ErrorTests extends FlatSpec with Matchers {
       "Known limitation: Converting records requires an explicit type argument to `to` method representing the target case class")
   }
 
+  import records.RecordConversions._
+  it should "report a nice error if inner fields are missing" in {
+    import records.Rec
+    case class A(a: B)
+    case class B(b: C)
+    case class C(c: Int, d: Int, x: Int)
+    val row = Rec("a" -> Rec("b" -> Rec("k" -> 1, "d" -> 2)))
+
+    typedWithMsg("row.to[A]", "Converting to A would require the source record " +
+      "to have the following additional fields: [a.b.c: Int, a.b.x: Int].")
+  }
+
+  it should "report a nice error if a nested field is of wrong type" in {
+    import records.Rec
+    case class A(a: B)
+    case class B(b: C)
+    case class C(c: String)
+    val row = Rec("a" -> Rec("b" -> Rec("c" -> 1)))
+
+    typedWithMsg("row.to[A]",
+      "Type of field a.b.c: Int of source record doesn't conform the expected type (String).")
+  }
+
+  it should "report a nice error if the inner type is not a case class" in {
+    import records.Rec
+    case class A(a: B)
+    case class B(b: Int)
+    val row = Rec("a" -> Rec("b" -> Rec("k" -> 1, "d" -> 2)))
+
+    typedWithMsg("row.to[A]",
+      "Type of field a.b: records.Rec{def k: Int; def d: Int} of source record doesn't conform the expected type (Int).")
+  }
 }

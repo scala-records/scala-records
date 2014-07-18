@@ -60,33 +60,50 @@ object RecordConversions {
       }
     }
 
-    def convertRecordMaterializer(fromType: Type, toType: Type): Tree = {
-      val toSym = toType.typeSymbol
+    def convertRecordMaterializer(fromType: Type, toType: Type, path: List[String] = Nil): Tree =
+      convertRecordMaterializer(fromType, toType, toType, path)
 
-      if (!toSym.asClass.isCaseClass) {
-        c.abort(NoPosition,
-          s"Records can only be converted to case classes; $toType is not a case class.")
+    def convertRecordMaterializer(
+      fromType: Type,
+      toType: Type,
+      originalType: Type,
+      path: List[String]): Tree = {
+
+      def prefix(suffix: String) =
+        if (path == Nil) "" else path.mkString("", ".", suffix)
+
+      // check if the expected type is a case class
+      if (!isCaseClass(toType)) {
+        c.abort(NoPosition, s"Records can only be converted to case classes;" +
+          s" $toType is not a case class.")
       }
 
+      // check if the record has all the fields of the expected class
       val fromFlds = recordFields(fromType).toMap
       val toFlds = caseClassFields(toType)
-      val tmpTerm = newTermName(c.fresh("tmp$"))
-      val missingFields = toFlds.map(_._1).filterNot(fromFlds.contains(_))
-      if (missingFields.size > 0) {
-        c.abort(NoPosition,
-          s"Converting to $toType would require the source record to have the " +
-            s"following additional fields: ${missingFields.mkString("[", ", ", "]")}.")
+      val missingFlds = toFlds.filterNot(x => fromFlds.contains(x._1))
+      if (missingFlds.size > 0) {
+        val fldsString = missingFlds.map(x => prefix(".") + x._1 + ": " + x._2).mkString("[", ", ", "]")
+        c.abort(NoPosition, s"Converting to ${originalType} would require the " +
+          s"source record to have the following additional fields: ${fldsString}.")
       }
-      val args = for ((fname, ftpe) <- toFlds) yield {
-        val fType = fromFlds(fname)
 
-        if (!(fType <:< ftpe)) {
-          c.abort(NoPosition,
-            s"Type of field $fname of source record ($fType) " +
-              s"doesn't conform the expected type ($ftpe).")
+      // do the conversion
+      val tmpTerm = newTermName(c.fresh("tmp$"))
+      val args = for ((toFldName, toFldTpe) <- toFlds) yield {
+        val fromTpe = fromFlds(toFldName)
+        if (fromTpe <:< typeOf[Rec] && isCaseClass(toFldTpe)) {
+          // convert the nested record recursively
+          val materializer =
+            convertRecordMaterializer(fromTpe, toFldTpe, originalType, path :+ toFldName)
+          q"$materializer.convert(${accessData(q"$tmpTerm", toFldName, fromTpe)})"
+        } else if (fromTpe <:< toFldTpe) {
+          // convert other types
+          accessData(q"$tmpTerm", toFldName, toFldTpe)
+        } else {
+          c.abort(NoPosition, s"Type of field ${prefix(".") + toFldName}: $fromTpe" +
+            s" of source record doesn't conform the expected type ($toFldTpe).")
         }
-
-        accessData(q"$tmpTerm", fname, ftpe)
       }
 
       q"""
@@ -117,5 +134,7 @@ object RecordConversions {
       if mem.isMacro && mem.isMethod
     } yield (mem.name.encoded, mem.asMethod.returnType)
 
+    private def isCaseClass(tpe: Type) =
+      tpe.typeSymbol.isClass && tpe.typeSymbol.asClass.isCaseClass
   }
 }
