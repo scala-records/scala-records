@@ -41,12 +41,14 @@ trait Rec {
   /** The number of fields in this record */
   def __dataCount: Int
 
-  /** Checks whether a field having the given [[fieldName]] exists. If this
+  /**
+   * Checks whether a field having the given [[fieldName]] exists. If this
    *  method returns true, an implementation may safely call `__dataAny`.
    */
   def __dataExists(fieldName: String): Boolean
 
-  /** Returns the value of the field [[fieldName]] as an untyped object. This is
+  /**
+   * Returns the value of the field [[fieldName]] as an untyped object. This is
    *  used by the equals methods. Implementations that know the target type of
    *  the field should use the `__data` method or - even better - the
    *  specialized versions of it.
@@ -56,7 +58,8 @@ trait Rec {
    */
   def __dataAny(fieldName: String): Any
 
-  /** Returns the value of the field [[fieldName]] with type [[T]].
+  /**
+   * Returns the value of the field [[fieldName]] with type [[T]].
    *
    *  Calling `__data` for a [[fieldName]] that does not exist or with a wrong
    *  type (other than specified at creation) yields undefined behavior.
