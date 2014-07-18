@@ -12,6 +12,7 @@ class ConversionTests extends FlatSpec with Matchers {
   case class SimpleVal(a: Int)
   case class ObjectVal(myObject: AnyRef)
   case class DBRecord(name: String, age: Int, location: String)
+  case class DBRecordHolder(f: DBRecord, anything: Any)
 
   "A Record" should "be able to convert into a case class" in {
     val x = Rec("a" -> 1)
@@ -35,7 +36,6 @@ class ConversionTests extends FlatSpec with Matchers {
   }
 
   it should "allow conversion if there is a `to` field" in {
-    import records._
     val record = Rec("to" -> "R")
     case class ToHolder(to: String)
 
@@ -43,9 +43,8 @@ class ConversionTests extends FlatSpec with Matchers {
     new Rec.Convert(record).to[ToHolder] should be(ToHolder("R"))
   }
 
-  it should "allow explicit conversion even when implict conversion is imported" in {
-    import records._
-    import records.RecordConversions._
+  import records.RecordConversions._
+  it should "allow explicit conversion even when implicit conversion is imported" in {
     val record = Rec("field" -> "42")
     case class FieldHolder(field: String)
 
@@ -53,14 +52,12 @@ class ConversionTests extends FlatSpec with Matchers {
   }
 
   it should "implicitly convert to a case class in a val position" in {
-    import records.RecordConversions._
     val x: DBRecord = Rec("name" -> "David", "age" -> 3, "location" -> "Lausanne")
 
     x.name should be("David")
   }
 
   it should "implicitly convert to a case class when constructing a list" in {
-    import records.RecordConversions._
     val xs = List[DBRecord](
       Rec("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
       Rec("name" -> "David", "age" -> 3, "location" -> "Lausanne"))
@@ -69,4 +66,21 @@ class ConversionTests extends FlatSpec with Matchers {
     xs.tail.head.name should be("David")
   }
 
+  it should "with nested records explicitly convert to a case class" in {
+    val rec = Rec("f" -> Rec("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
+      "anything" -> 1)
+
+    rec.to[DBRecordHolder].f.name should be("David")
+  }
+
+  it should "with nested records implicitly convert to a case class" in {
+    val xs = List[DBRecordHolder](
+      Rec("f" -> Rec("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
+        "anything" -> 1),
+      Rec("f" -> Rec("name" -> "David", "age" -> 3, "location" -> "Lausanne"),
+        "anything" -> 1))
+
+    xs.head.f.name should be("David")
+    xs.tail.head.f.name should be("David")
+  }
 }
