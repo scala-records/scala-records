@@ -30,6 +30,10 @@ object RecordConversions {
   def to_impl[From <: Rec: c.WeakTypeTag, To: c.WeakTypeTag](c: Context): c.Expr[To] = {
     import c.universe._
     val (fromTpe, toTpe) = (c.weakTypeTag[From].tpe, c.weakTypeTag[To].tpe)
+
+    if (toTpe.typeSymbol.asType.isAbstractType)
+      c.abort(NoPosition, s"Known limitation: Converting records requires an explicit type argument to `to` method representing the target case class")
+
     val typeClass =
       new ConversionMacros[c.type](c).convertRecordMaterializer(fromTpe, toTpe)
 
