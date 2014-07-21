@@ -204,25 +204,35 @@ object Macros {
      *  time) and the hashCodes of the field values
      */
     def genHashCode(schema: Schema): Tree = {
+      import scala.util.hashing.MurmurHash3._
+
+      val sortedSchema = schema.sortBy(_._1)
+
+      val recSeed = -972824572
 
       // Hash of all field names
-      val nameHash = schema.foldLeft(0) {
-        case (hash, (name, _)) =>
-          hash ^ name.hashCode
+      val nameHash = sortedSchema.foldLeft(recSeed) {
+        case (hash, (name, _)) => mix(hash, name.hashCode)
       }
 
       // Hashes of fields
-      val fieldHashes = schema.map {
+      val fieldHashes = sortedSchema.map {
         case (name, tpe) =>
           val data = accessData(q"this", name, tpe)
           q"$data.##"
       }
 
+      val mm3 = q"_root_.scala.util.hashing.MurmurHash3"
+
       val hashBody = fieldHashes.foldLeft[Tree](q"$nameHash") {
-        case (acc, hash) => q"$acc ^ $hash"
+        case (acc, hash) => q"$mm3.mix($acc, $hash)"
       }
 
-      q"override def hashCode(): Int = $hashBody"
+      val elemCount = sortedSchema.size * 2
+
+      q"""
+      override def hashCode(): Int = $mm3.finalizeHash($hashBody, $elemCount)
+      """
     }
 
     /** Generate `_\u200B_dataExists` member */
