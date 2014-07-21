@@ -16,6 +16,24 @@ object BuildSettings {
     scmInfo := Some(ScmInfo(
       url("https://github.com/scala-records/scala-records.git"),
       "git://github.com/scala-records/scala-records.git")),
+    pomExtra := (
+      <developers>
+        <developer>
+          <id>gzm0</id>
+          <name>Tobias Schlatter</name>
+          <url>https://github.com/gzm0</url>
+        </developer>
+        <developer>
+          <id>vjovanov</id>
+          <name>Vojin Jovanovic</name>
+          <url>https://github.com/vjovanov</url>
+        </developer>
+        <developer>
+          <id>hubertp</id>
+          <name>Hubert Plociniczak</name>
+          <url>https://github.com/hubertp</url>
+        </developer>
+      </developers>),
 
     // Actual settings
     scalacOptions ++= Seq("-deprecation", "-feature"),
