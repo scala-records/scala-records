@@ -241,7 +241,7 @@ object Macros {
       val lookupTree =
         genLookup(q"fieldName", lookupData, default = Some(q"false"))
 
-      q"$synthMod def __dataExists(fieldName: String) = $lookupTree"
+      q"$synthMod def __dataExists(fieldName: String): Boolean = $lookupTree"
     }
 
     /** Generate `_\u200B_dataAny` member */
@@ -252,7 +252,7 @@ object Macros {
       }.toMap
       val lookupTree = genLookup(q"fieldName", lookupData, mayCache = false)
 
-      q"$synthMod def __dataAny(fieldName: String) = $lookupTree"
+      q"$synthMod def __dataAny(fieldName: String): Any = $lookupTree"
     }
 
     /**
