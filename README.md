@@ -29,7 +29,7 @@ person: records.Rec{def name: String; def age: Int} = Rec { name = Hannah, age =
 
 Fields of records can be accessed just like fields of classes:
 ```scala
-if (person.age > 18) println(s"${person.name} is adult.")
+if (person.age > 18) println(s"${person.name} is an adult.")
 ```
 
 Scala Records allow for arbitrary levels of nesting:
@@ -50,9 +50,7 @@ val personClass = person.to[Person]
 As well as implicitly when the contents of `records.RecordConversions` are imported:
 ```scala
 import records.RecordConversions._
-case class Country(name: String, state: String)
-case class Person(name: String, age: String, country: Country)
-val personClass: Person = person.to[Person]
+val personClass: Person = person
 ```
 
 In case of erroneous access, type errors will be comprehensible:
@@ -65,8 +63,6 @@ scala> person.nme
 
 Errors are also appropriate when converting to case classes:
 ```scala
-case class Country(name: String, state: String)
-case class Person(name: String, age: String, country: Country)
 val person = Rec("name" -> "Hannah", "age" -> 30)
 val personClass = person.to[Person]
 
