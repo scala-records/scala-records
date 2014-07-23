@@ -295,6 +295,60 @@ object Macros {
     def genLookup(nameTree: Tree, data: Map[String, Tree],
                   default: Option[Tree] = None, mayCache: Boolean = true): Tree = {
 
+      val count = data.size + default.size
+
+      if (count == 0) {
+        q"???"
+      } else if (count == 1) {
+        // Shortcut for only one case
+        data.values.headOption.orElse(default).get
+      } else if (data.size == 1) {
+        // No need doing switch. We have a normal and a default case
+        val (keyStr, tree) = data.head
+        q"""if ($nameTree == $keyStr) $tree else ${default.get}"""
+      } else if (data.contains("")) {
+        // Special case this, since the per-char distinction won't work
+        val lookupRest = genLookup(nameTree, data - "", default, mayCache)
+        q"""if ($nameTree == "") ${data("")} else $lookupRest"""
+      } else {
+        val keys = data.keys.toList
+        val minSize = keys.map(_.length).min
+
+        val optSplitIdx = {
+          val optimality = for (i <- 0 until minSize)
+            yield (i, keys.map(_.charAt(i)).distinct.size)
+          optimality.maxBy(_._2)._1
+        }
+
+        val grouped = data.groupBy(_._1.charAt(optSplitIdx))
+
+        val cases0 = grouped.map {
+          case (c, innerData) =>
+            val body = {
+              if (innerData.size == 1 && default.isEmpty)
+                // Only one key matches and no default. Done
+                innerData.values.head
+              else
+                genTrivialLookup(nameTree, innerData, default)
+            }
+
+            cq"$c => $body"
+        }
+
+        val cases1 = cases0 ++ default.map(default => cq"_ => $default")
+
+        val switchAnnot = tq"_root_.scala.annotation.switch"
+        q"""
+          ($nameTree.charAt($optSplitIdx): @$switchAnnot) match {
+            case ..$cases1
+          }
+        """
+      }
+    }
+
+    private def genTrivialLookup(nameTree: Tree, data: Map[String, Tree],
+                                 default: Option[Tree]) = {
+
       val cases0 = data.map {
         case (name, res) => cq"$name => $res"
       }
