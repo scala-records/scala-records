@@ -83,4 +83,10 @@ class ConversionTests extends FlatSpec with Matchers {
     xs.head.f.name should be("David")
     xs.tail.head.f.name should be("David")
   }
+
+  it should "be able to convert to generic case class with explicit type arguments" in {
+    case class GenericDBRecord[T](name: String, age: T)
+    val record = Rec("name" -> "David", "age" -> 1)
+    record.to[GenericDBRecord[Int]]
+  }
 }
