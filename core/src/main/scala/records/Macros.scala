@@ -455,6 +455,35 @@ object Macros {
 
     private lazy val rTpe: Type = implicitly[WeakTypeTag[Rec]].tpe
 
+    def recordUnapply(scrutinee: c.Expr[Rec]): c.Expr[Any] = {
+      if (CompatInfo.isScala210)
+        c.abort(c.enclosingPosition, "Record matching is not supported on 2.10.x")
+      val fields: List[TermName] = c.internal.subpatterns(scrutinee.tree).getOrElse {
+        c.abort(c.enclosingPosition, "Rec.unapply only works in pattern matching mode")
+      }.map {
+        case pq"${ name: TermName } @ ${ _ }" => name
+        case subp                             => c.abort(subp.pos, "Record field matcher must be a variable binding")
+      }
+      val body =
+        if (fields.isEmpty) q"true"
+        else {
+          def fieldType(field: TermName): Option[Type] =
+            scrutinee.tree.tpe.declarations.collectFirst {
+              case sym if sym.name == field && sym.isMacro =>
+                sym.typeSignature match {
+                  case NullaryMethodType(tpe) => Some(tpe)
+                  case _                      => None
+                }
+            }.flatten
+          val guard = fields.map { f => q"rec.__dataExists(${f.decoded})" }.reduce { (l, r) => q"$l && $r" }
+          val accessors = fields.map { f =>
+            accessData(q"rec", f.decoded, fieldType(f).getOrElse(typeOf[Any]))
+          }
+          q"if ($guard) _root_.scala.Some((..$accessors)) else _root_.scala.None"
+        }
+      val expansion = q"new { def unapply(rec: _root_.records.Rec) = $body }.unapply($scrutinee)"
+      c.Expr[Any](expansion)
+    }
   }
 
   def apply_impl(c: Context)(method: c.Expr[String])(v: c.Expr[(String, Any)]*): c.Expr[Rec] = {
@@ -472,6 +501,9 @@ object Macros {
           s"You may not invoke Rec.$methodName with a non-literal method name.")
     }
   }
+
+  def unapply_impl(c: Context)(scrutinee: c.Expr[Rec]): c.Expr[Any] =
+    new RecordMacros[c.type](c).recordUnapply(scrutinee)
 
   def selectField_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._

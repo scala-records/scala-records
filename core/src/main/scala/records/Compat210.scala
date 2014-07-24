@@ -46,6 +46,10 @@ trait Internal210 { self =>
     final val SYNTHETIC = (1L << 21).asInstanceOf[FlagSet]
   }
 
+  implicit class RichUniverse(val universe: c.universe.type) {
+    def subpatterns(dummy: Tree): Option[List[Tree]] = None
+  }
+
 }
 
 object CompatInfo {
