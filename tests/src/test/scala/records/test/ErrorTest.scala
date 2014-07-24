@@ -129,4 +129,22 @@ class ErrorTests extends FlatSpec with Matchers {
     typedWithMsg("row.to[A]",
       "Type of field a.b: records.Rec{def k: Int; def d: Int} of source record doesn't conform the expected type (Int).")
   }
+
+  it should "report an error if a bad method is called on Rec" in {
+    import records.Rec
+    typedWithMsg("Rec.foo()",
+      "value foo is not a member of records.Rec")
+  }
+
+  it should "report an error if a bad method is called on Rec (named param case)" in {
+    import records.Rec
+    typed("Rec.foo(foo = 1)")
+  }
+
+  it should "report an error if Rec.invokeDynamic is called with a variable method name" in {
+    import records.Rec
+    val x = "apply"
+    typedWithMsg("Rec.applyDynamic(x)()",
+      "You may not invoke Rec.applyDynamic with a non-literal method name.")
+  }
 }

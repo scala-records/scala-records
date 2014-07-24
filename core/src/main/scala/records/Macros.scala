@@ -358,14 +358,24 @@ object Macros {
       q"$nameTree match { case ..$cases1 }"
     }
 
-    /** Macro that implements [[Rec.apply]]. You probably won't need this. */
+    /**
+     * Macro that implements [[Rec.applyDynamic]] and [[Rec.applyDynamicNamed]].
+     * You probably won't need this.
+     */
     def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec] = {
       val constantLiteralsMsg =
         "Records can only be constructed with constant keys (string literals)."
+      val noEmptyStrMsg =
+        "Records may not have a field with an empty name"
+
       val tuples = v.map(_.tree).map {
-        case Literal(Constant(s: String)) -> v          => (s, v)
-        case q"(${ Literal(Constant(s: String)) }, $v)" => (s, v)
-        case q"($k, $v)" =>
+        case Tuple2(Literal(Constant(s: String)), v) =>
+          if (s == "") c.abort(NoPosition, noEmptyStrMsg)
+          else (s, v)
+        case Literal(Constant(s: String)) -> v =>
+          if (s == "") c.abort(NoPosition, noEmptyStrMsg)
+          else (s, v)
+        case Tuple2(_, _) =>
           c.abort(NoPosition, constantLiteralsMsg)
         case _ -> _ =>
           c.abort(NoPosition, constantLiteralsMsg)
@@ -425,6 +435,14 @@ object Macros {
       }
     }
 
+    object Tuple2 {
+      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+        case q"($a, $b)" => Some((a, b))
+        case q"scala.this.Tuple2.apply[..${ _ }]($a, $b)" => Some((a, b))
+        case _ => None
+      }
+    }
+
     object -> {
       def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
         // Scala 2.11.x
@@ -439,8 +457,21 @@ object Macros {
 
   }
 
-  def apply_impl(c: Context)(v: c.Expr[(String, Any)]*): c.Expr[Rec] =
-    new RecordMacros[c.type](c).recordApply(v)
+  def apply_impl(c: Context)(method: c.Expr[String])(v: c.Expr[(String, Any)]*): c.Expr[Rec] = {
+    import c.universe._
+    method.tree match {
+      case Literal(Constant(str: String)) if str == "apply" =>
+        new RecordMacros[c.type](c).recordApply(v)
+      case Literal(Constant(str: String)) =>
+        val targetName = c.prefix.actualType.typeSymbol.fullName
+        c.abort(NoPosition,
+          s"value $str is not a member of $targetName")
+      case _ =>
+        val methodName = c.macroApplication.symbol.name
+        c.abort(NoPosition,
+          s"You may not invoke Rec.$methodName with a non-literal method name.")
+    }
+  }
 
   def selectField_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._

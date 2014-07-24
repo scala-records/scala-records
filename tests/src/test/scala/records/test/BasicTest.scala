@@ -213,4 +213,11 @@ class BasicTest extends FlatSpec with Matchers {
     a should not be (c)
     b should not be (c)
   }
+
+  it should "support Rec(a = 1) syntax" in {
+    val r = Rec(a = "foo", b = 1234)
+
+    r.a should be("foo")
+    r.b should be(1234)
+  }
 }

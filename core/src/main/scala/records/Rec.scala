@@ -1,13 +1,35 @@
 package records
 
 import scala.language.experimental.macros
+import scala.language.dynamics
 
 import scala.reflect._
 import RecordConversions._
 
-object Rec {
-  /** Create a "literal record" with field value pairs `v`. */
-  def apply(v: (String, Any)*): Rec = macro records.Macros.apply_impl
+object Rec extends Dynamic {
+  /**
+   * Create a "literal record" with field value pairs `v`:
+   * {{{
+   * Rec("name" -> "Hans", "age" -> 7)
+   * }}}
+   *
+   * This method has nothing dynamic in its nature, but defining
+   * `apply` won't allow [[applyDynamicNamed]] to get triggered for
+   * calls of the form:
+   * {{{
+   * Rec(name = "Hans", age = 7)
+   * }}}
+   */
+  def applyDynamic(method: String)(v: (String, Any)*): Rec = macro records.Macros.apply_impl
+
+  /**
+   * Create a "literal record" with field value pairs `v` using named
+   * parameters:
+   * {{{
+   * Rec(name = "Hans", age = 7)
+   * }}}
+   */
+  def applyDynamicNamed(method: String)(v: (String, Any)*): Rec = macro records.Macros.apply_impl
 
   /**
    * An extension method for converting records into case classes.
@@ -35,7 +57,8 @@ object Rec {
  * extend other traits (such as Serializable or a trait defined by your project)
  * and add custom fields if required.
  *
- * If you just want to create a record, use [[Rec.apply]].
+ * If you just want to create a record, use [[Rec.applyDynamic]] or
+ * [[Rec.applyDynamicNamed]].
  */
 trait Rec {
   /** The number of fields in this record */
