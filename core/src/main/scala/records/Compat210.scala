@@ -21,7 +21,6 @@ trait Internal210 { self =>
   import c.universe._
 
   implicit class RichSymbol(val sym: Symbol) {
-    def info = sym.typeSignature
     def overrides: List[Symbol] = sym.allOverriddenSymbols
   }
 

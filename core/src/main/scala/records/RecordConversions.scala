@@ -118,15 +118,14 @@ object RecordConversions {
 
     def caseClassFields(ccType: Type) = {
       val primCtor = ccType.members.collectFirst {
-        case m if m.isMethod && m.asMethod.isPrimaryConstructor =>
-          m.asMethod
+        case m: MethodSymbol if m.isPrimaryConstructor => m
       }.get
 
       if (primCtor.paramLists.size > 1)
         c.abort(NoPosition, "Target case class may only have a single parameter list.")
 
-      for (param <- primCtor.paramLists.head)
-        yield (param.name.encoded, param.info)
+      val MethodType(params, _) = primCtor.typeSignatureIn(ccType)
+      params map (param => (param.name.encoded, param.typeSignature))
     }
 
     def recordFields(recType: Type) = for {
