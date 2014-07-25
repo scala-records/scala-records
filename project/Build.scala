@@ -38,11 +38,11 @@ object BuildSettings {
     // Actual settings
     scalacOptions ++= Seq("-deprecation", "-feature"),
     autoAPIMappings := true,
-    scalaVersion := "2.11.1",
+    scalaVersion := "2.11.2",
 
     crossScalaVersions := Seq(
       "2.10.2", "2.10.3", "2.10.4",
-      "2.11.0", "2.11.1",
+      "2.11.0", "2.11.1", "2.11.2",
       "2.12.0-SNAPSHOT"),
     resolvers += Resolver.sonatypeRepo("snapshots"),
     libraryDependencies += {
