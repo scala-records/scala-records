@@ -3,6 +3,8 @@ import Keys._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
+import scala.scalajs.sbtplugin.ScalaJSPlugin._
+
 object BuildSettings {
   val paradiseVersion = "2.0.0"
   val buildSettings = Defaults.defaultSettings ++ SbtScalariform.scalariformSettings ++ Seq(
@@ -90,6 +92,13 @@ object BuildSettings {
 object MyBuild extends Build {
   import BuildSettings._
 
+  val sharedCoreSettings = (
+    macroBuildSettings ++ publishSettings
+  ) ++ Seq(
+    name := "scala-records",
+    autoCompilerPlugins := true
+  )
+
   lazy val root = project.in(file("."))
     .aggregate(synthPlugin, core, tests)
 
@@ -104,11 +113,13 @@ object MyBuild extends Build {
     )
 
   lazy val core = project
-    .settings(macroBuildSettings: _*)
-    .settings(publishSettings: _*)
-    .settings(
-      name := "scala-records",
-      autoCompilerPlugins := true)
+    .settings(sharedCoreSettings: _*)
+    .dependsOn(synthPlugin % "plugin")
+
+  lazy val coreJS = project
+    .settings(sharedCoreSettings: _*)
+    .settings(scalaJSSettings: _*)
+    .settings(scalaSource in Compile <<= scalaSource in core in Compile)
     .dependsOn(synthPlugin % "plugin")
 
   lazy val tests = project
