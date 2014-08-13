@@ -2,10 +2,11 @@
  * == Labeled Records for Scala ==
  *
  * If you just want to create a record and play around with it, you
- * can use [[Rec.apply]]:
+ * can use [[Rec.applyDynamic]] or [[Rec.applyDynamicNamed]]:
  *
  * {{{
- * val data = Rec("name" -> "Tom", age -> 5)
+ * val data0 = Rec("name" -> "Tom", age -> 5)
+ * val data1 = Rec(name = "Tom", age = 5)
  * }}}
  *
  * You can then access its fields as if it were a normal class:
@@ -89,14 +90,16 @@
  * You may provide your own back-end to records by using the macro
  * library provided by [[Macros.RecordMacros]]. You will want
  * to use one of the following methods to create your record:
- *  - [[Macros.RecordMacros.record]]: Simplest case, used by [[Rec.apply]]
+ *  - [[Macros.RecordMacros.record]]: Simplest case, used by [[Rec.applyDynamic]]
+ *    and [[Rec.applyDynamicNamed]].
  *  - [[Macros.RecordMacros.specializedRecord]]: Records that are specialized
  *    on primitive types. Avoids boxing.
  *  - [[Macros.RecordMacros.genRecord]]: Generalized record. Probably not
  *    what you want.
  *
  * For an example usage, have a look at the code of
- * [[Macros.apply_impl]] (the macro for [[Rec.apply]]).
+ * [[Macros.apply_impl]] (the macro for [[Rec.applyDynamic]] and
+ * [[Rec.applyDynamicNamed]]).
  *
  */
 package object records
