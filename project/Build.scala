@@ -10,7 +10,7 @@ object BuildSettings {
   val buildSettings = Defaults.defaultSettings ++ SbtScalariform.scalariformSettings ++ Seq(
 
     // Metadata
-    version := "0.2-SNAPSHOT",
+    version := "0.2",
     organization := "ch.epfl.lamp",
     licenses := Seq("New BSD" -> url("https://raw2.github.com/scala-records/scala-records/master/LICENSE")),
     homepage := Some(url("https://github.com/scala-records/scala-records/")),
