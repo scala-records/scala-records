@@ -49,8 +49,8 @@ object RecordConversions {
         .map { case c.ImplicitCandidate(_, _, tp, tree) => tp.normalize }
 
       val implicitCandidates = allImplicitCandidates.collect {
-        case TypeRef(_, _, _ :: toType :: Nil) => toType
-      }.filter(x => x.typeSymbol.isClass && x.typeSymbol.asClass.isCaseClass)
+        case TypeRef(_, _, _ :: toType :: Nil) if isCaseClass(toType) => toType
+      }
 
       implicitCandidates match {
         case candidate :: Nil =>
@@ -99,7 +99,7 @@ object RecordConversions {
           q"$materializer.convert(${accessData(q"$tmpTerm", toFldName, fromTpe)})"
         } else if (fromTpe <:< toFldTpe) {
           // convert other types
-          accessData(q"$tmpTerm", toFldName, toFldTpe)
+          accessData(q"$tmpTerm", toFldName, fromTpe)
         } else {
           c.abort(NoPosition, s"Type of field ${prefix(".") + toFldName}: $fromTpe" +
             s" of source record doesn't conform the expected type ($toFldTpe).")
