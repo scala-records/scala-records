@@ -455,17 +455,22 @@ object Macros {
 
     private lazy val rTpe: Type = implicitly[WeakTypeTag[Rec]].tpe
 
+    sealed trait FieldPattern { def name: TermName }
+    final case class TuplePattern(name: TermName) extends FieldPattern
+    final case class BindPattern(name: TermName) extends FieldPattern
+
     def recordUnapply(scrutinee: c.Expr[Rec]): c.Expr[Any] = {
       if (CompatInfo.isScala210)
         c.abort(c.enclosingPosition, "Record matching is not supported on 2.10.x")
-      val fields: List[TermName] = c.internal.subpatterns(scrutinee.tree).getOrElse {
+      val fieldPats: List[FieldPattern] = c.internal.subpatterns(scrutinee.tree).getOrElse {
         c.abort(c.enclosingPosition, "Rec.unapply only works in pattern matching mode")
       }.map {
-        case pq"${ name: TermName } @ ${ _ }" => name
-        case subp                             => c.abort(subp.pos, "Record field matcher must be a variable binding")
+        case pq"${ name: TermName } @ ${ _ }" => BindPattern(name)
+        case pq"(${ s: String }, ${ _ })"     => TuplePattern(newTermName(s))
+        case other                            => c.abort(other.pos, "Record field matcher must be a variable binding")
       }
       val body =
-        if (fields.isEmpty) q"true"
+        if (fieldPats.isEmpty) q"true"
         else {
           def fieldType(field: TermName): Option[Type] =
             scrutinee.tree.tpe.declarations.collectFirst {
@@ -475,9 +480,12 @@ object Macros {
                   case _                      => None
                 }
             }.flatten
-          val guard = fields.map { f => q"rec.__dataExists(${f.decoded})" }.reduce { (l, r) => q"$l && $r" }
-          val accessors = fields.map { f =>
-            accessData(q"rec", f.decoded, fieldType(f).getOrElse(typeOf[Any]))
+          def fieldAccessor(field: TermName): Tree =
+            accessData(q"rec", field.decoded, fieldType(field).getOrElse(typeOf[Any]))
+          val guard = fieldPats.map { pat => q"rec.__dataExists(${pat.name.decoded})" }.reduce { (l, r) => q"$l && $r" }
+          val accessors = fieldPats.map {
+            case BindPattern(f)  => fieldAccessor(f)
+            case TuplePattern(f) => q"(${f.decoded.toString}, ${fieldAccessor(f)})"
           }
           q"if ($guard) _root_.scala.Some((..$accessors)) else _root_.scala.None"
         }
