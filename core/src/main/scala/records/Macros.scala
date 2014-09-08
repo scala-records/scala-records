@@ -455,6 +455,43 @@ object Macros {
 
     private lazy val rTpe: Type = implicitly[WeakTypeTag[Rec]].tpe
 
+    sealed trait FieldPattern { def name: TermName }
+    final case class TuplePattern(name: TermName) extends FieldPattern
+    final case class BindPattern(name: TermName) extends FieldPattern
+
+    def recordUnapply(scrutinee: c.Expr[Rec]): c.Expr[Any] = {
+      if (CompatInfo.isScala210)
+        c.abort(c.enclosingPosition, "Record matching is not supported on 2.10.x")
+      val fieldPats: List[FieldPattern] = c.internal.subpatterns(scrutinee.tree).getOrElse {
+        c.abort(c.enclosingPosition, "Rec.unapply only works in pattern matching mode")
+      }.map {
+        case pq"${ name: TermName } @ ${ _ }" => BindPattern(name)
+        case pq"(${ s: String }, ${ _ })"     => TuplePattern(newTermName(s))
+        case other                            => c.abort(other.pos, "Record field matcher must be a variable binding")
+      }
+      val body =
+        if (fieldPats.isEmpty) q"true"
+        else {
+          def fieldType(field: TermName): Option[Type] =
+            scrutinee.tree.tpe.declarations.collectFirst {
+              case sym if sym.name == field && sym.isMacro =>
+                sym.typeSignature match {
+                  case NullaryMethodType(tpe) => Some(tpe)
+                  case _                      => None
+                }
+            }.flatten
+          def fieldAccessor(field: TermName): Tree =
+            accessData(q"rec", field.decoded, fieldType(field).getOrElse(typeOf[Any]))
+          val guard = fieldPats.map { pat => q"rec.__dataExists(${pat.name.decoded})" }.reduce { (l, r) => q"$l && $r" }
+          val accessors = fieldPats.map {
+            case BindPattern(f)  => fieldAccessor(f)
+            case TuplePattern(f) => q"(${f.decoded.toString}, ${fieldAccessor(f)})"
+          }
+          q"if ($guard) _root_.scala.Some((..$accessors)) else _root_.scala.None"
+        }
+      val expansion = q"new { def unapply(rec: _root_.records.Rec) = $body }.unapply($scrutinee)"
+      c.Expr[Any](expansion)
+    }
   }
 
   def apply_impl(c: Context)(method: c.Expr[String])(v: c.Expr[(String, Any)]*): c.Expr[Rec] = {
@@ -472,6 +509,9 @@ object Macros {
           s"You may not invoke Rec.$methodName with a non-literal method name.")
     }
   }
+
+  def unapply_impl(c: Context)(scrutinee: c.Expr[Rec]): c.Expr[Any] =
+    new RecordMacros[c.type](c).recordUnapply(scrutinee)
 
   def selectField_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
     import c.universe._

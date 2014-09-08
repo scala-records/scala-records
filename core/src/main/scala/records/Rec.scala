@@ -31,6 +31,9 @@ object Rec extends Dynamic {
    */
   def applyDynamicNamed(method: String)(v: (String, Any)*): Rec = macro records.Macros.apply_impl
 
+  /** Extract a sequence of fields out of the record. */
+  def unapply(scrutinee: Rec): Any = macro records.Macros.unapply_impl
+
   /**
    * An extension method for converting records into case classes.
    * It is implemented as an extension to avoid collision with the record fields.

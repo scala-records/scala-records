@@ -130,7 +130,7 @@ object MyBuild extends Build {
         if (scalaVersion.value >= "2.11")
           Seq(sourceDirectory.value / "test-2.11" / "scala")
         else
-          Seq()
+          Seq(sourceDirectory.value / "test-2.10" / "scala")
       }
     )
     .dependsOn(core)
