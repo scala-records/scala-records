@@ -477,7 +477,7 @@ object Macros {
     import c.universe._
 
     val fieldName = newTermName(c.macroApplication.symbol.name.toString).decoded
-    val tpe = implicitly[c.WeakTypeTag[T]].tpe
+    val tpe = c.macroApplication.symbol.asMethod.returnType
 
     val applyTree =
       new RecordMacros[c.type](c).accessData(c.prefix.tree, fieldName, tpe)
