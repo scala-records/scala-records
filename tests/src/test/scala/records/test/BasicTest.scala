@@ -220,4 +220,17 @@ class BasicTest extends FlatSpec with Matchers {
     r.a should be("foo")
     r.b should be(1234)
   }
+
+  it should "support generic fields" in {
+    val r = Rec(a = List(1, 2, 3))
+
+    r.a should be(List(1, 2, 3))
+  }
+
+  it should "support array fields" in {
+    val r = Rec(a = "foo", b = Array(1, 2, 3))
+
+    r.a should be("foo")
+    r.b should be(Array(1, 2, 3))
+  }
 }
