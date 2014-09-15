@@ -233,4 +233,11 @@ class BasicTest extends FlatSpec with Matchers {
     r.a should be("foo")
     r.b should be(Array(1, 2, 3))
   }
+
+  case class Box[T](x: T)
+  it should "be able to nest wrapped records" in {
+    val x = Rec("theBox" -> Box(Rec("a" -> 1, "b" -> Box("asdf"))))
+
+    x.theBox.x.a should be(1)
+  }
 }
