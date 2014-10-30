@@ -1,9 +1,10 @@
 Records for Scala [![Build Status](https://travis-ci.org/scala-records/scala-records.png?branch=master)](https://travis-ci.org/scala-records/scala-records)
 ================================================
 
-Scala Records introduce a data type `Rec` for representing record types. Records are convenient for accessing and manipulating structured data with a large number of named fields. Records are similar in functionality to [F# records][f#-records] and [shapeless records][shapeless-records]. Most relevant use cases are:
+Scala Records introduce a data type `Rec` for representing record types. Records are convenient for accessing and manipulating structured data with named fields. Records are similar in functionality to [F# records][f#-records] and [shapeless records][shapeless-records]. Most relevant use cases are:
 + Manipulating large tables in big-data frameworks like [Spark][spark] and [Scalding][scalding]
 + Manipulating results of SQL queries
++ Manipulating JSON
 
 Records are implemented using macros and completely blend in the Scala environment. With records:
 + Fields are accessed with a path just like regular case classes (e.g. `rec.country.state`)
@@ -81,20 +82,28 @@ libraryDependencies += "ch.epfl.lamp" %% "scala-records" % <version>
 
 [sonatype]: https://oss.sonatype.org/index.html#nexus-search;quick~scala-records
 
+## Support
+
+It is "safe" to use Scala Records in your project. They will be supported until we find a more principal, and functioning, solution for accessing
+structured data in Scala. For further details see [this page](design-decisions).
+
+[design-decisions]: https://github.com/scala-records/scala-records/wiki/Why-Scala-Records-with-Structural-Types-and-Macros%3F
 ## Current Limitations
 ### For All Scala Versions
 
-1. Records must not be explicitly mentioned. In case of explicit mentioning the result will be a run-time exception. In `2.11.x` this would be detected by a warning. For example:
+1. Record types must not be explicitly mentioned. In case of explicit mentioning the result will be a run-time exception. In `2.11.x` this would be detected by a warning. For example:
 
    ```
-   val rec: Rec{def x: Int} = Rec("x" -> 1)
+   val rec: Rec { def x: Int } = Rec("x" -> 1)
    rec.x // throws an exception
    ```
    + Fixing [SI-7340](https://issues.scala-lang.org/browse/SI-7340) would resolve this issue.
+   + A workaround would be to write a case class for a record type.
 
-2. Records will not display nicely in IntelliJ IDEA. IntelliJ IDEA does not support whitebox macros.
+2. Records will not display nicely in IntelliJ IDEA. IntelliJ IDEA does not support whitebox macros:
+   + Writing a custom implementation for IntelliJ would remove this limitation.
 
-3. In the Eclipse debugger records can not be debugged when conversions to case classes are used. For this to work the IDE must to understand the behavior of implicit macors.
+3. In the Eclipse debugger records can not be debugged when conversions to case classes are used. For this to work the IDE must to understand the behavior of implicit macros.
 
 4. In the Eclipse debugger records display as their underlying data structures. If these structures are optimized it is hard to keep track of the fields.
 
@@ -108,7 +117,7 @@ libraryDependencies += "ch.epfl.lamp" %% "scala-records" % <version>
 [warn]     row.baz should be (1.7)
    ```
 
-   To disable this users must use an import `import scala.language.reflectiveCalls` or by setting the compiler option `-language:reflectiveCalls`.
+   To disable this warning users must introduce `import scala.language.reflectiveCalls` in a scope or set the compiler option `-language:reflectiveCalls`.
 2. Least upper bounds (LUBs) of two records can not be found. Consequences are the following:
 
    + If two queries return the same records the results can not be directly combined under a same type. For example, `List(Rec("a" -> 1), Rec("a" -> 2))` will not be usable.
@@ -121,8 +130,8 @@ In case you have any desires for new functionality, or find errors in the existi
 
 ## Contributors
 Scala Records are developed with love and joy in the [Scala Lab][scalalab] at [EPFL][epfl] in collaboration with Michael Armbrust from [Databricks][databricks]. Main contributors are:
+ + Vojin Jovanovic (@vjovanov)
  + Tobias Schlatter (@gzm0)
- + Vojin Jovanvoic (@vjovanov)
  + Hubert Plocziniczak (@hubertp)
 
 [databricks]: https://databricks.com/
