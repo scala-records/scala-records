@@ -84,8 +84,7 @@ libraryDependencies += "ch.epfl.lamp" %% "scala-records" % <version>
 
 ## Support
 
-It is "safe" to use Scala Records in your project. They will be supported until we find a more principal, and functioning, solution for accessing
-structured data in Scala. For further details see [this page][design-decisions].
+It is "safe" to use Scala Records in your project. They cross-compile against all minor Scala versions after 2.10.2. We will give our best effort to fix all the bugs promptly until we find a more principal, and functioning, solution for accessing semi-structured data in Scala. For further details see [this page][design-decisions].
 
 [design-decisions]: https://github.com/scala-records/scala-records/wiki/Why-Scala-Records-with-Structural-Types-and-Macros%3F
 ## Current Limitations
