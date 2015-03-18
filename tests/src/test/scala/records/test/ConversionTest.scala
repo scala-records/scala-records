@@ -39,8 +39,8 @@ class ConversionTests extends FlatSpec with Matchers {
     val record = Rec("to" -> "R")
     case class ToHolder(to: String)
 
-    record.to should be("R")
-    new Rec.Convert(record).to[ToHolder] should be(ToHolder("R"))
+    Rec.fld(record).to should be("R")
+    Rec.ops(record).to[ToHolder] should be(ToHolder("R"))
   }
 
   import records.RecordConversions._
