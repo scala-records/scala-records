@@ -19,7 +19,7 @@ class ErrorTests extends FlatSpec with Matchers {
     val row = records.Rec("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
 
     typedWithMsg("""row.lol""",
-      "value lol is not a member of records.Rec{def foo: Int; def bar: Double; def baz: Double}")
+      "value lol is not a member of records.Rec[AnyRef{def foo: Int; def bar: Double; def baz: Double}]")
   }
 
   it should "report an error on duplicate fields" in {
@@ -82,7 +82,7 @@ class ErrorTests extends FlatSpec with Matchers {
     val row = Rec("a" -> Rec("b" -> Rec("c" -> 1)))
 
     typedWithMsg("row.a.c",
-      "value c is not a member of records.Rec{def b: records.Rec{def c: Int}}")
+      "value c is not a member of records.Rec[AnyRef{def b: records.Rec[AnyRef{def c: Int}]}]")
   }
 
   it should "report an error when calling conversion method without type argument" in {
@@ -127,7 +127,7 @@ class ErrorTests extends FlatSpec with Matchers {
     val row = Rec("a" -> Rec("b" -> Rec("k" -> 1, "d" -> 2)))
 
     typedWithMsg("row.to[A]",
-      "Type of field a.b: records.Rec{def k: Int; def d: Int} of source record doesn't conform the expected type (Int).")
+      "Type of field a.b: records.Rec[AnyRef{def k: Int; def d: Int}] of source record doesn't conform the expected type (Int).")
   }
 
   it should "report an error if a bad method is called on Rec" in {

@@ -9,10 +9,8 @@ object Macros {
   import scala.reflect.macros._
   import whitebox.Context
 
-  class RecordMacros[C <: Context](val c: C) extends Internal210 {
+  class RecordMacros[C <: Context](val c: C) extends CommonMacros.Common[C] {
     import c.universe._
-
-    type Schema = Seq[(String, Type)]
 
     protected val rImplMods = Modifiers(Flag.OVERRIDE | Flag.SYNTHETIC)
     protected val synthMod = Modifiers(Flag.SYNTHETIC)
@@ -103,11 +101,9 @@ object Macros {
     def genRecord(schema: Schema, ancestors: Seq[Ident],
                   impl: Seq[Tree]): Tree = {
 
-      val macroFields = schema.map((genRecordField _).tupled)
-
       val dataCountTree = q"$synthMod def __dataCount = ${schema.size}"
 
-      val body = impl ++ macroFields ++ Seq(
+      val body = impl ++ Seq(
         genToString(schema),
         genHashCode(schema),
         genDataExists(schema),
@@ -115,62 +111,20 @@ object Macros {
         genEquals(schema),
         dataCountTree)
 
-      val resultTree = if (CompatInfo.isScala210) {
-        q"""
-        import scala.language.experimental.macros
-        class Workaround extends _root_.records.Rec with ..$ancestors {
-          ..$body
+      val structType = {
+        val fields = for {
+          (name, tpe) <- schema
+        } yield {
+          val encName = newTermName(name).encodedName.toTermName
+          q"def $encName: $tpe"
         }
-        new Workaround()
-        """
-      } else {
-        q"""
-        import scala.language.experimental.macros
-        new _root_.records.Rec with ..$ancestors {
-          ..$body
-        }
-        """
+        tq"{ ..$fields }"
       }
 
-      resultTree
-    }
-
-    /**
-     * Create a tree for a 'def' of a record field.
-     * If a type of the field is yet another record, it will be a class type of the $\u200Banon
-     * class (created as part of [[genRecord]]), rather than a pure RefinedType. Therefore
-     * we have to recreate it and provide an appropriate type to the macro call.
-     */
-    def genRecordField(name: String, tpe: Type): Tree = {
-      def enclClass(sym: Symbol): Symbol =
-        if (sym.isClass) sym
-        else enclClass(sym.owner)
-
-      def isValidAccessor(methSym: MethodSymbol): Boolean =
-        !methSym.isConstructor && methSym.isPublic && methSym.overrides.isEmpty
-
-      val tpeOfField =
-        if (tpe.baseType(rTpe.typeSymbol) != NoType) {
-          // tpe.isInstanceOf[Rec] will return false.
-          tpe.typeSymbol.typeSignature match {
-            case cls @ ClassInfoType(parents, decls: Scope, tsym) =>
-              // `cls` has in the scope declarations
-              // for constructor and overriden __data. We want to remove them from
-              // the scope of the RefinedType that we want to define.
-              val decls1: Scope =
-                decls.filter {
-                  case meth: MethodSymbol => isValidAccessor(meth)
-                  case _                  => false
-                }.asInstanceOf[Scope]
-              c.internal.refinedType(parents, enclClass(tpe.typeSymbol.owner),
-                decls1, tpe.typeSymbol.pos)
-            case _ =>
-              tpe
-          }
-        } else tpe
       q"""
-        def ${newTermName(name).encodedName.toTermName}: $tpeOfField =
-          macro _root_.records.Macros.selectField_impl[$tpeOfField]
+      new _root_.records.Rec[$structType] with ..$ancestors {
+        ..$body
+      }: _root_.records.Rec[$structType] with ..$ancestors
       """
     }
 
@@ -274,7 +228,7 @@ object Macros {
 
       q"""
       override def equals(that: Any) = that match {
-        case that: _root_.records.Rec if that.__dataCount == $thisCount =>
+        case that: _root_.records.Rec[Any] if that.__dataCount == $thisCount =>
           ${tests.fold[Tree](q"true") { case (x, y) => q"$x && $y" }}
         case _ => false
       }
@@ -362,7 +316,7 @@ object Macros {
      * Macro that implements [[Rec.applyDynamic]] and [[Rec.applyDynamicNamed]].
      * You probably won't need this.
      */
-    def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec] = {
+    def recordApply(v: Seq[c.Expr[(String, Any)]]): c.Expr[Rec[Any]] = {
       val constantLiteralsMsg =
         "Records can only be constructed with constant keys (string literals)."
       val noEmptyStrMsg =
@@ -395,33 +349,7 @@ object Macros {
           q"private val _data = $data")(
             q"_data(fieldName).asInstanceOf[T]")
 
-      c.Expr[Rec](resultTree)
-    }
-
-    /** Generate a specialized data access on a record */
-    def accessData(receiver: Tree, fieldName: String, tpe: Type): Tree = {
-      import definitions._
-
-      tpe match {
-        case BooleanTpe =>
-          q"$receiver.__dataBoolean($fieldName)"
-        case ByteTpe =>
-          q"$receiver.__dataByte($fieldName)"
-        case ShortTpe =>
-          q"$receiver.__dataShort($fieldName)"
-        case CharTpe =>
-          q"$receiver.__dataChar($fieldName)"
-        case IntTpe =>
-          q"$receiver.__dataInt($fieldName)"
-        case LongTpe =>
-          q"$receiver.__dataLong($fieldName)"
-        case FloatTpe =>
-          q"$receiver.__dataFloat($fieldName)"
-        case DoubleTpe =>
-          q"$receiver.__dataDouble($fieldName)"
-        case _ =>
-          q"$receiver.__dataObj[$tpe]($fieldName)"
-      }
+      c.Expr[Rec[Any]](resultTree)
     }
 
     private def checkDuplicate(schema: Seq[(String, c.Type)]): Unit = {
@@ -434,67 +362,9 @@ object Macros {
           c.abort(NoPosition, s"Fields ${fields.mkString(", ")} are defined more than once.")
       }
     }
-
-    object Tuple2 {
-      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
-        case q"($a, $b)" => Some((a, b))
-        case q"scala.this.Tuple2.apply[..${ _ }]($a, $b)" => Some((a, b))
-        case _ => None
-      }
-    }
-
-    object -> {
-      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
-        // Scala 2.11.x
-        case q"scala.this.Predef.ArrowAssoc[..${ _ }]($a).->[..${ _ }]($b)" => Some((a, b))
-        // Scala 2.10.x
-        case q"scala.this.Predef.any2ArrowAssoc[..${ _ }]($a).->[..${ _ }]($b)" => Some((a, b))
-        case _ => None
-      }
-    }
-
-    private lazy val rTpe: Type = implicitly[WeakTypeTag[Rec]].tpe
-
-    sealed trait FieldPattern { def name: TermName }
-    final case class TuplePattern(name: TermName) extends FieldPattern
-    final case class BindPattern(name: TermName) extends FieldPattern
-
-    def recordUnapply(scrutinee: c.Expr[Rec]): c.Expr[Any] = {
-      if (CompatInfo.isScala210)
-        c.abort(c.enclosingPosition, "Record matching is not supported on 2.10.x")
-      val fieldPats: List[FieldPattern] = c.internal.subpatterns(scrutinee.tree).getOrElse {
-        c.abort(c.enclosingPosition, "Rec.unapply only works in pattern matching mode")
-      }.map {
-        case pq"${ name: TermName } @ ${ _ }" => BindPattern(name)
-        case pq"(${ s: String }, ${ _ })"     => TuplePattern(newTermName(s))
-        case other                            => c.abort(other.pos, "Record field matcher must be a variable binding")
-      }
-      val body =
-        if (fieldPats.isEmpty) q"true"
-        else {
-          def fieldType(field: TermName): Option[Type] =
-            scrutinee.tree.tpe.declarations.collectFirst {
-              case sym if sym.name == field && sym.isMacro =>
-                sym.typeSignature match {
-                  case NullaryMethodType(tpe) => Some(tpe)
-                  case _                      => None
-                }
-            }.flatten
-          def fieldAccessor(field: TermName): Tree =
-            accessData(q"rec", field.decoded, fieldType(field).getOrElse(typeOf[Any]))
-          val guard = fieldPats.map { pat => q"rec.__dataExists(${pat.name.decoded})" }.reduce { (l, r) => q"$l && $r" }
-          val accessors = fieldPats.map {
-            case BindPattern(f)  => fieldAccessor(f)
-            case TuplePattern(f) => q"(${f.decoded.toString}, ${fieldAccessor(f)})"
-          }
-          q"if ($guard) _root_.scala.Some((..$accessors)) else _root_.scala.None"
-        }
-      val expansion = q"new { def unapply(rec: _root_.records.Rec) = $body }.unapply($scrutinee)"
-      c.Expr[Any](expansion)
-    }
   }
 
-  def apply_impl(c: Context)(method: c.Expr[String])(v: c.Expr[(String, Any)]*): c.Expr[Rec] = {
+  def apply_impl(c: Context)(method: c.Expr[String])(v: c.Expr[(String, Any)]*): c.Expr[Rec[Any]] = {
     import c.universe._
     method.tree match {
       case Literal(Constant(str: String)) if str == "apply" =>
@@ -508,21 +378,6 @@ object Macros {
         c.abort(NoPosition,
           s"You may not invoke Rec.$methodName with a non-literal method name.")
     }
-  }
-
-  def unapply_impl(c: Context)(scrutinee: c.Expr[Rec]): c.Expr[Any] =
-    new RecordMacros[c.type](c).recordUnapply(scrutinee)
-
-  def selectField_impl[T: c.WeakTypeTag](c: Context): c.Expr[T] = {
-    import c.universe._
-
-    val fieldName = newTermName(c.macroApplication.symbol.name.toString).decoded
-    val tpe = c.macroApplication.symbol.asMethod.returnType
-
-    val applyTree =
-      new RecordMacros[c.type](c).accessData(c.prefix.tree, fieldName, tpe)
-
-    c.Expr[T](applyTree)
   }
 
 }

@@ -12,7 +12,7 @@ class UnapplyTest extends FlatSpec with Matchers {
   }
 
   it should "be able to extract fields that are not in the signature" in {
-    val rec: Rec = Rec(x = 1, y = 2)
+    val rec: Rec[_] = Rec(x = 1, y = 2)
     val Rec(x, y) = rec
     val Rec(("x", _), ("y", _)) = rec
   }
