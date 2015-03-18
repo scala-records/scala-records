@@ -89,4 +89,9 @@ class ConversionTests extends FlatSpec with Matchers {
     val record = Rec("name" -> "David", "age" -> 1)
     record.to[GenericDBRecord[Int]]
   }
+
+  it should "allow conversions directly on a constructed type" in {
+    case class FieldHolder(f: Int)
+    Rec("f" -> 1).to[FieldHolder].f should be(1)
+  }
 }
