@@ -240,4 +240,11 @@ class BasicTest extends FlatSpec with Matchers {
 
     x.theBox.x.a should be(1)
   }
+
+  it should "allow to write types" in {
+    val x: Rec[{ def name: String; def age: Int }] = Rec(name = "foo", age = 1)
+
+    x.name should be("foo")
+    x.age should be(1)
+  }
 }
