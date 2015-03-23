@@ -1,7 +1,5 @@
-Records for Scala [![Build Status](https://travis-ci.org/scala-records/scala-records.png?branch=master)](https://travis-ci.org/scala-records/scala-records)
+Records for Scala [![Build Status](https://travis-ci.org/scala-records/scala-records.png?branch=master)](https://travis-ci.org/scala-records/scala-records) [![Join the chat at https://gitter.im/scala-records/scala-records](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scala-records/scala-records?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 ================================================
-
-[![Join the chat at https://gitter.im/scala-records/scala-records](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scala-records/scala-records?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Scala Records introduce a data type `Rec` for representing record types. Records are convenient for accessing and manipulating semi-structured data. Records are similar in functionality to [F# records][f#-records] and [shapeless records][shapeless-records], however, they do not impose an ordering on their fields. Most relevant use cases are:
 + Manipulating large tables in big-data frameworks like [Spark][spark] and [Scalding][scalding]
