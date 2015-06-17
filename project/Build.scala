@@ -3,7 +3,9 @@ import Keys._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
-import scala.scalajs.sbtplugin.ScalaJSPlugin._
+import org.scalajs.sbtplugin.ScalaJSPlugin
+import ScalaJSPlugin._
+import ScalaJSPlugin.autoImport._
 
 object BuildSettings {
   val paradiseVersion = "2.0.0"
@@ -40,12 +42,13 @@ object BuildSettings {
     // Actual settings
     scalacOptions ++= Seq("-deprecation", "-feature"),
     autoAPIMappings := true,
-    scalaVersion := "2.11.2",
+    scalaVersion := "2.11.6",
 
     crossScalaVersions := Seq(
       "2.10.2", "2.10.3", "2.10.4",
       "2.11.0", "2.11.1", "2.11.2",
-      "2.12.0-SNAPSHOT"),
+      "2.11.3", "2.11.4", "2.11.5",
+      "2.11.6", "2.12.0-SNAPSHOT"),
     resolvers += Resolver.sonatypeRepo("snapshots"),
     libraryDependencies += {
       if (scalaVersion.value == "2.12.0-SNAPSHOT")
@@ -117,8 +120,8 @@ object MyBuild extends Build {
     .dependsOn(synthPlugin % "plugin")
 
   lazy val coreJS = project
+    .enablePlugins(ScalaJSPlugin)
     .settings(sharedCoreSettings: _*)
-    .settings(scalaJSSettings: _*)
     .settings(scalaSource in Compile <<= scalaSource in core in Compile)
     .dependsOn(synthPlugin % "plugin")
 
