@@ -9,7 +9,7 @@ import ScalaJSPlugin.autoImport._
 
 object BuildSettings {
   val paradiseVersion = "2.0.0"
-  val buildSettings = Defaults.defaultSettings ++ SbtScalariform.scalariformSettings ++ Seq(
+  val buildSettings = SbtScalariform.scalariformSettings ++ Seq(
 
     // Metadata
     version := "0.4-SNAPSHOT",
