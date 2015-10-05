@@ -58,7 +58,10 @@ object CommonMacros {
     object Tuple2 {
       def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
         case q"($a, $b)" => Some((a, b))
+        // Scala 2.11
         case q"scala.this.Tuple2.apply[..${ _ }]($a, $b)" => Some((a, b))
+        // Scala 2.12
+        case q"scala.Tuple2.apply[..${ _ }]($a, $b)" => Some((a, b))
         case _ => None
       }
     }
@@ -66,6 +69,8 @@ object CommonMacros {
     /** Extractor for the tree of a Tuple2 in the form x -> y */
     object -> {
       def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+        // Scala 2.12.x
+        case q"scala.Predef.ArrowAssoc[..${ _ }]($a).->[..${ _ }]($b)" => Some((a, b))
         // Scala 2.11.x
         case q"scala.this.Predef.ArrowAssoc[..${ _ }]($a).->[..${ _ }]($b)" => Some((a, b))
         // Scala 2.10.x
