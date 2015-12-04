@@ -121,6 +121,10 @@ It is "safe" to use Scala Records in your project. They cross-compile against al
 
    + If two queries return the same records the results can not be directly combined under a same type. For example, `List(Rec("a" -> 1), Rec("a" -> 2))` will not be usable.
 
+## Performance
+
+Scala Records compile asymptotically faster and run asymptotically faster than type-based approaches to records (e.g. `HMaps`). For up-to-date benchmarks check out [this repo](https://github.com/scala-records/scala-records-benchmarks).
+
 ## Helping Further Development
 
 In case you have any desires for new functionality, or find errors in the existing one, please report them in the [issue tracker][issues]. We will gladly discuss further development and accept your pull requests.
