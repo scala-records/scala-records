@@ -48,13 +48,11 @@ object BuildSettings {
       "2.10.2", "2.10.3", "2.10.4",
       "2.11.0", "2.11.1", "2.11.2",
       "2.11.3", "2.11.4", "2.11.5",
-      "2.11.6", "2.12.0-RC1", "2.12.0-SNAPSHOT"),
+      "2.11.6", "2.12.0", "2.12.1",
+      "2.12.2", "2.12.3"),
     resolvers += Resolver.sonatypeRepo("snapshots"),
     libraryDependencies += {
-      if (scalaVersion.value == "2.12.0-SNAPSHOT")
-        "org.scalatest" % "scalatest_2.12" % "3.0.0" % "test"
-      else
-        "org.scalatest" %% "scalatest" % "3.0.0" % "test"
+      "org.scalatest" %% "scalatest" % "3.0.0" % "test"
     },
     ScalariformKeys.preferences in Compile := formattingPreferences,
     ScalariformKeys.preferences in Test    := formattingPreferences
