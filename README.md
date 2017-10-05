@@ -110,11 +110,11 @@ It is "safe" to use Scala Records in your project. They cross-compile against al
 
 1. All record calls will fire a warning for a reflective macro call.
 
-   ```
+```
 [warn] 109: reflective access of structural type member macro method baz should be enabled
 [warn] by making the implicit value scala.language.reflectiveCalls visible.
 [warn]     row.baz should be (1.7)
-   ```
+```
 
    To disable this warning users must introduce `import scala.language.reflectiveCalls` in a scope or set the compiler option `-language:reflectiveCalls`.
 2. Least upper bounds (LUBs) of two records can not be found. Consequences are the following:
