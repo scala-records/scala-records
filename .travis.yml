@@ -24,5 +24,14 @@ branches:
     - record-operations
 matrix:
   include:
-  - scala: 2.12.0-RC1
+  - scala: 2.12.0
+    jdk: oraclejdk8
+  include:
+  - scala: 2.12.1
+    jdk: oraclejdk8
+  include:
+  - scala: 2.12.2
+    jdk: oraclejdk8
+  include:
+  - scala: 2.12.3
     jdk: oraclejdk8
