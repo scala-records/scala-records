@@ -145,8 +145,8 @@ object Macros {
         case (acc, e) => q"""$acc + ", " + $e"""
       }
 
-      val str = cont.fold[Tree](q""""Rec {}"""") { cont =>
-        q""""Rec { " + $cont + " }""""
+      val str = cont.fold[Tree](q""" "Rec {}" """) { cont =>
+        q""" "Rec { " + $cont + " }" """
       }
 
       q"override def toString(): String = $str"
