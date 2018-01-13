@@ -67,7 +67,8 @@ class ConversionTests extends FlatSpec with Matchers {
   }
 
   it should "with nested records explicitly convert to a case class" in {
-    val rec = Rec("f" -> Rec("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
+    val rec = Rec(
+      "f" -> Rec("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
       "anything" -> 1)
 
     rec.to[DBRecordHolder].f.name should be("David")
@@ -75,9 +76,11 @@ class ConversionTests extends FlatSpec with Matchers {
 
   it should "with nested records implicitly convert to a case class" in {
     val xs = List[DBRecordHolder](
-      Rec("f" -> Rec("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
+      Rec(
+        "f" -> Rec("name" -> "David", "age" -> 2, "location" -> "Lausanne"),
         "anything" -> 1),
-      Rec("f" -> Rec("name" -> "David", "age" -> 3, "location" -> "Lausanne"),
+      Rec(
+        "f" -> Rec("name" -> "David", "age" -> 3, "location" -> "Lausanne"),
         "anything" -> 1))
 
     xs.head.f.name should be("David")

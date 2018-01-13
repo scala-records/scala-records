@@ -1,3 +1,3 @@
-addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0")
+addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.2")
 
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.3")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.21")

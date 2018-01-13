@@ -18,21 +18,25 @@ class ErrorTests extends FlatSpec with Matchers {
   "A record" should "report an error on invalid field access" in {
     val row = records.Rec("foo" -> 1, ("bar", 2.3), Tuple2("baz", 1.7))
 
-    typedWithMsg("""row.lol""",
+    typedWithMsg(
+      """row.lol""",
       "value lol is not a member of records.Rec[AnyRef{def foo: Int; def bar: Double; def baz: Double}]")
   }
 
   it should "report an error on duplicate fields" in {
-    typedWithMsg("""records.Rec("a" -> 1, "a" -> "Hello World")""",
+    typedWithMsg(
+      """records.Rec("a" -> 1, "a" -> "Hello World")""",
       "Field a is defined more than once.")
-    typedWithMsg("""records.Rec("a" -> 1, "a" -> "Hello World", "b" -> 3, "b" -> 3.4)""",
+    typedWithMsg(
+      """records.Rec("a" -> 1, "a" -> "Hello World", "b" -> 3, "b" -> 3.4)""",
       "Fields a, b are defined more than once.")
   }
 
   it should "report an error when non-literals are used" in {
     val x = 1
     val b = ("foo", 4)
-    typedWithMsg("""records.Rec("a" -> x, b)""",
+    typedWithMsg(
+      """records.Rec("a" -> x, b)""",
       "Records can only be constructed with tuples (a, b) and arrows a -> b.")
   }
 
@@ -41,7 +45,8 @@ class ErrorTests extends FlatSpec with Matchers {
 
     class A(foo: Int, bar: Double, baz: Double)
 
-    typedWithMsg("row.to[A]",
+    typedWithMsg(
+      "row.to[A]",
       "Records can only be converted to case classes; A is not a case class.")
   }
 
@@ -51,10 +56,12 @@ class ErrorTests extends FlatSpec with Matchers {
 
     case class A(foo: Int, bar: Double, baz: Double, msg: String)
 
-    typedWithMsg("row1.to[A]",
+    typedWithMsg(
+      "row1.to[A]",
       "Converting to A would require the source record to have the " +
         "following additional fields: [msg: String].")
-    typedWithMsg("row2.to[A]",
+    typedWithMsg(
+      "row2.to[A]",
       "Converting to A would require the source record to have the " +
         "following additional fields: [foo: Int, bar: Double, baz: Double, msg: String].")
   }
@@ -64,7 +71,8 @@ class ErrorTests extends FlatSpec with Matchers {
 
     case class A(foo: Int, bar: Int)
 
-    typedWithMsg("row.to[A]",
+    typedWithMsg(
+      "row.to[A]",
       "Type of field foo: String of source record doesn't conform the expected type (Int).")
   }
 
@@ -73,7 +81,8 @@ class ErrorTests extends FlatSpec with Matchers {
 
     case class A(x: Int, y: Int)(z: Int)
 
-    typedWithMsg("row.to[A]",
+    typedWithMsg(
+      "row.to[A]",
       "Target case class may only have a single parameter list.")
   }
 
@@ -81,7 +90,8 @@ class ErrorTests extends FlatSpec with Matchers {
     import records.Rec
     val row = Rec("a" -> Rec("b" -> Rec("c" -> 1)))
 
-    typedWithMsg("row.a.c",
+    typedWithMsg(
+      "row.a.c",
       "value c is not a member of records.Rec[AnyRef{def b: records.Rec[AnyRef{def c: Int}]}]")
   }
 
@@ -90,10 +100,12 @@ class ErrorTests extends FlatSpec with Matchers {
     val record = Rec("field" -> "42")
     case class FieldHolder(field: String)
 
-    typedWithMsg("record.to",
+    typedWithMsg(
+      "record.to",
       "Known limitation: Converting records requires an explicit type argument to `to` method representing the target case class")
 
-    typedWithMsg("val x: FieldHolder = record.to",
+    typedWithMsg(
+      "val x: FieldHolder = record.to",
       "Known limitation: Converting records requires an explicit type argument to `to` method representing the target case class")
   }
 
@@ -116,7 +128,8 @@ class ErrorTests extends FlatSpec with Matchers {
     case class C(c: String)
     val row = Rec("a" -> Rec("b" -> Rec("c" -> 1)))
 
-    typedWithMsg("row.to[A]",
+    typedWithMsg(
+      "row.to[A]",
       "Type of field a.b.c: Int of source record doesn't conform the expected type (String).")
   }
 
@@ -126,13 +139,15 @@ class ErrorTests extends FlatSpec with Matchers {
     case class B(b: Int)
     val row = Rec("a" -> Rec("b" -> Rec("k" -> 1, "d" -> 2)))
 
-    typedWithMsg("row.to[A]",
+    typedWithMsg(
+      "row.to[A]",
       "Type of field a.b: records.Rec[AnyRef{def k: Int; def d: Int}] of source record doesn't conform the expected type (Int).")
   }
 
   it should "report an error if a bad method is called on Rec" in {
     import records.Rec
-    typedWithMsg("Rec.foo()",
+    typedWithMsg(
+      "Rec.foo()",
       "value foo is not a member of records.Rec")
   }
 
@@ -144,7 +159,8 @@ class ErrorTests extends FlatSpec with Matchers {
   it should "report an error if Rec.invokeDynamic is called with a variable method name" in {
     import records.Rec
     val x = "apply"
-    typedWithMsg("Rec.applyDynamic(x)()",
+    typedWithMsg(
+      "Rec.applyDynamic(x)()",
       "You may not invoke Rec.applyDynamic with a non-literal method name.")
   }
 }

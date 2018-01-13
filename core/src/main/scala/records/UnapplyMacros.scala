@@ -23,12 +23,14 @@ object UnapplyMacros {
 
     def recordUnapply(scrutinee: c.Expr[Rec[Any]]): c.Expr[Any] = {
       if (CompatInfo.isScala210) {
-        c.abort(c.enclosingPosition,
+        c.abort(
+          c.enclosingPosition,
           "Record matching is not supported on 2.10.x")
       }
 
       val subPats = c.internal.subpatterns(scrutinee.tree).getOrElse {
-        c.abort(c.enclosingPosition,
+        c.abort(
+          c.enclosingPosition,
           "Rec.unapply only works in pattern matching mode")
       }
 

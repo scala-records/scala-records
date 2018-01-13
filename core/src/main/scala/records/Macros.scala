@@ -371,11 +371,13 @@ object Macros {
         new RecordMacros[c.type](c).recordApply(v)
       case Literal(Constant(str: String)) =>
         val targetName = c.prefix.actualType.typeSymbol.fullName
-        c.abort(NoPosition,
+        c.abort(
+          NoPosition,
           s"value $str is not a member of $targetName")
       case _ =>
         val methodName = c.macroApplication.symbol.name
-        c.abort(NoPosition,
+        c.abort(
+          NoPosition,
           s"You may not invoke Rec.$methodName with a non-literal method name.")
     }
   }
