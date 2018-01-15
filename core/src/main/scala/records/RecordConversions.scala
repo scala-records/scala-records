@@ -63,10 +63,10 @@ object RecordConversions {
       convertRecordMaterializer(fromType, toType, toType, path)
 
     def convertRecordMaterializer(
-      fromType: Type,
-      toType: Type,
+      fromType:     Type,
+      toType:       Type,
       originalType: Type,
-      path: List[String]): Tree = {
+      path:         List[String]): Tree = {
 
       def prefix(suffix: String) =
         if (path == Nil) "" else path.mkString("", ".", suffix)

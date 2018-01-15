@@ -9,8 +9,9 @@ object TypecheckingMacros {
   import whitebox.Context
 
   private class Macro[C <: Context](val c: C) extends Internal210 {
-    def typecheck(what: c.Expr[String],
-                  expected: Option[String]): c.Expr[Unit] = {
+    def typecheck(
+      what:     c.Expr[String],
+      expected: Option[String]): c.Expr[Unit] = {
 
       import c.universe._
 
@@ -23,7 +24,8 @@ object TypecheckingMacros {
           val errMsg = e.getMessage
           expected foreach { msg0 =>
             if (errMsg != msg0)
-              c.abort(c.enclosingPosition,
+              c.abort(
+                c.enclosingPosition,
                 s"Type error messages mismatch.\nExpected: $msg0\nFound: $errMsg")
           }
       }

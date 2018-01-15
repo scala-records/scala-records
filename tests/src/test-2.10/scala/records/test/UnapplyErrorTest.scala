@@ -10,7 +10,8 @@ class UnapplyErrorTests extends FlatSpec with Matchers {
   it should "report that unapply is not supported on 2.10" in {
     import records.Rec
     val r = Rec()
-    typedWithMsg("Rec.unapply(r)",
+    typedWithMsg(
+      "Rec.unapply(r)",
       "Record matching is not supported on 2.10.x")
   }
 }

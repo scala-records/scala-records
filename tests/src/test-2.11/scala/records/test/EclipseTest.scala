@@ -13,7 +13,7 @@ object EclipseTest extends App {
   case class DBRecord(name: String, age: Int, location: String)
 
   // This test is used to explore the macro expansion in the IDE
-  val x =  List(
+  val x = List(
     Rec("myObject" -> "String", "foo" -> "bar"), Rec("myObject" -> "String", "foo" -> "bar"),
     Rec("myObject" -> "String", "foo" -> "bar"), Rec("myObject" -> "String", "foo" -> "bar"),
     Rec("myObject" -> "String", "foo" -> "bar"), Rec("myObject" -> "String", "foo" -> "bar"),
@@ -37,8 +37,7 @@ object EclipseTest extends App {
     Rec("myObject" -> "String", "foo" -> "bar"), Rec("myObject" -> "String", "foo" -> "bar"),
     Rec("myObject" -> "String", "foo" -> "bar"), Rec("myObject" -> "String", "foo" -> "bar"),
     Rec("myObject" -> "String", "foo" -> "bar"), Rec("myObject" -> "String", "foo" -> "bar"),
-    Rec("myObject" -> "String", "foo" -> "bar"), Rec("myObject" -> "String", "foo" -> "bar")
-  )
+    Rec("myObject" -> "String", "foo" -> "bar"), Rec("myObject" -> "String", "foo" -> "bar"))
   val y = x.head
   val z = x.head.to[ObjectVal]
   val a = if (true) Rec("a" -> 1, "b" -> 1) else Rec("a" -> 1)
@@ -61,8 +60,7 @@ object EclipseTest extends App {
     Rec("name" -> "David", "age" -> 15, "location" -> "Lausanne"),
     Rec("name" -> "David", "age" -> 16, "location" -> "Lausanne"),
     Rec("name" -> "David", "age" -> 17, "location" -> "Lausanne"),
-    Rec("name" -> "David", "age" -> 18, "location" -> "Lausanne")
-  )
+    Rec("name" -> "David", "age" -> 18, "location" -> "Lausanne"))
 
   List(
     y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject,
@@ -76,6 +74,5 @@ object EclipseTest extends App {
     y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject,
     y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject,
     y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject,
-    y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject
-  )
+    y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject, y.myObject)
 }
