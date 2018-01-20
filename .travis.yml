@@ -12,9 +12,12 @@ scala:
   - 2.11.4
   - 2.11.5
   - 2.11.6
+  - 2.12.0
+  - 2.12.1
+  - 2.12.2
+  - 2.12.3
 jdk:
-  - oraclejdk7
-  - openjdk6
+  - oraclejdk8
 notifications:
   email:
     - gvojin@gmail.com
@@ -22,16 +25,3 @@ branches:
   only:
     - master
     - record-operations
-matrix:
-  include:
-  - scala: 2.12.0
-    jdk: oraclejdk8
-  include:
-  - scala: 2.12.1
-    jdk: oraclejdk8
-  include:
-  - scala: 2.12.2
-    jdk: oraclejdk8
-  include:
-  - scala: 2.12.3
-    jdk: oraclejdk8
