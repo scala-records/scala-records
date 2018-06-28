@@ -16,6 +16,7 @@ scala:
   - 2.12.1
   - 2.12.2
   - 2.12.3
+  - 2.13.0-M4
 jdk:
   - oraclejdk8
 notifications:
