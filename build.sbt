@@ -35,14 +35,16 @@ val buildSettings = SbtScalariform.scalariformSettings ++ Seq(
   // Actual settings
   scalacOptions ++= Seq("-deprecation", "-feature"),
   autoAPIMappings := true,
-  scalaVersion := "2.11.6",
+  scalaVersion := "2.12.8",
 
   crossScalaVersions := Seq(
     "2.10.2", "2.10.3", "2.10.4",
     "2.11.0", "2.11.1", "2.11.2",
     "2.11.3", "2.11.4", "2.11.5",
     "2.11.6", "2.12.0", "2.12.1",
-    "2.12.2", "2.12.3", "2.13.0-M4"),
+    "2.12.2", "2.12.3", "2.12.4",
+    "2.12.5", "2.12.6", "2.12.7", 
+    "2.12.8", "2.13.0-M4"),
   resolvers += Resolver.sonatypeRepo("snapshots"),
   libraryDependencies += {
     "org.scalatest" %% "scalatest" % "3.0.6-SNAP1" % "test"
