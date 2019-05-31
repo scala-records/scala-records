@@ -47,7 +47,7 @@ val buildSettings = SbtScalariform.scalariformSettings ++ Seq(
     "2.12.8", "2.13.0-RC2"),
   resolvers += Resolver.sonatypeRepo("snapshots"),
   libraryDependencies += {
-    "org.scalatest" %% "scalatest" % "3.0.8-RC4" % Test
+    "org.scalatest" %% "scalatest" % "3.0.8-RC5" % Test
   },
   ScalariformKeys.preferences in Compile := formattingPreferences,
   ScalariformKeys.preferences in Test    := formattingPreferences
